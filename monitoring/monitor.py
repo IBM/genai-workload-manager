@@ -5,7 +5,6 @@ from flask import Flask, jsonify, request, abort
 import requests
 from kubernetes import client, config
 app = Flask(__name__)
-
 '''
 def load_config(config_file):
     with open(config_file, 'r') as f:
@@ -16,8 +15,8 @@ config_file = os.environ.get('CONFIG_FILE')
 if config_file:
     app.config.update(load_config(config_file))
 '''
-HOST=os.environ.get('MHOST')
-PORT=os.environ.get('MPORT')
+HOST=os.environ.get('MHOST','0.0.0.0')
+PORT=os.environ.get('MPORT',6000)
 
 @app.route('/freegpu', methods=['GET'])
 def getfreegpu():
