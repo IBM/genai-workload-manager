@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sg-test-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: base
+        image: nvcr.io/nvidia/pytorch:22.09-py3
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: GIT_PAT
+          valueFrom:
+            secretKeyRef:
+              name: ap-git-pat-pub
+              key: "token"
+        - name: GIT_PAT_IBM
+          valueFrom:
+            secretKeyRef:
+              name: ap-git-pat
+              key: "token"
+        command:
+        - sh
+        - -c
+        - |
+            touch /tmp/dms
+            echo 'touch /tmp/dms' >> ~/.bashrc
+            while true
+            do
+                pgrep python || $(find /tmp/dms -newermt '6 hours ago' | grep -q .) || exit
+                sleep 30m
+            done
+        resources:
+          requests:
+            cpu: "64"
+            nvidia.com/gpu: "2"
+            memory: "100Gi"
+          limits:
+            cpu: "64"
+            nvidia.com/gpu: "4"
+            memory: "500Gi"
+        volumeMounts:
+        - name: dshm
+          mountPath: "/dev/shm"
+        - name: data
+          mountPath: /data
+        - name: modelops
+          mountPath: /modelops
+        - name: scratch
+          mountPath: /new_data
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: modelops-deps-pullsecret
+      - name: us-icr-cred
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      - name: data
+        persistentVolumeClaim:
+          claimName: fms-tuning-pvc
+      - name: modelops
+        persistentVolumeClaim:
+          claimName: modelops-deps-pvc
+      - name: scratch
+        persistentVolumeClaim:
+          claimName: llm-alignment
