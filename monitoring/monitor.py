@@ -14,14 +14,15 @@ def load_config(config_file):
 config_file = os.environ.get('CONFIG_FILE')
 if config_file:
     app.config.update(load_config(config_file))
+
 '''
 HOST=os.environ.get('MHOST','0.0.0.0')
 PORT=os.environ.get('MPORT',6000)
+SECRET_FILE = 'secret.json'
 
 @app.route('/freegpu', methods=['GET'])
 def getfreegpu():
-    headers = {
-    }
+    headers = json.load(open('secret.json'))
     response = requests.get('https://prometheus-k8s-openshift-monitoring.apps.pok.res.ibm.com/api/v1/query?query=group%20by(Hostname,gpu,exported_pod)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)', headers=headers)
     '''
     with open("output.json", 'r') as f:
@@ -43,7 +44,7 @@ def getfreegpu():
 def getresourcequota(ns):
     print(f'{ns}')
     ns = f'{ns}'
-    config.load_kube_config('kubeconfig')   
+    config.load_kube_config()   
     v1 = client.CoreV1Api()
     hard = v1.list_namespaced_resource_quota(ns).items[0].status.hard['requests.nvidia.com/gpu']
     used = v1.list_namespaced_resource_quota(ns).items[0].status.used['requests.nvidia.com/gpu']
