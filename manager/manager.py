@@ -51,6 +51,7 @@ def allot_gpu(spec_file):
     # 3. Get free resources per node
     response = requests.get(f'{MANAGER_IP}:{MANAGER_PORT}{NODE_ENDPOINT}')
     node_info = response.json()
+    print(node_info)
     sorted_node_info = dict(sorted(node_info.items(), key=lambda item: item[1]))
     filtered_nodes = {k:v for k,v in sorted_node_info.items() if v > pod_resource_info["request"]}
     print(f'Num acceptable nodes: {len(filtered_nodes)}/{len(sorted_node_info)}')
