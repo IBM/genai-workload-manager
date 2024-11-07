@@ -8,6 +8,7 @@ Goals:
 """
 
 from hikaru import load_full_yaml
+import yaml
 from kubernetes import config
 from kubernetes.client import ApiClient
 import requests
@@ -19,56 +20,47 @@ MANAGER_PORT=6000
 RQ_ENDPOINT='/resourcequota/fms-tuning'
 NODE_ENDPOINT='/freegpu'
 
-def allot_gpu(spec_file):
+def setup_k8s_client():
     # 0. Connect to the k8s client
     config.load_kube_config()
     client = ApiClient()
 
-    # 1. Read yaml of pod/job and get request/limit
-    yaml = load_full_yaml(stream=open(spec_file))[0]
+def read_pod_job_yaml(spec_file):
     gpu = 'nvidia.com/gpu'
     containers = None
+    yaml = load_full_yaml(stream=open(spec_file))[0]
     print(f'Yaml kind: {yaml.kind}')
     if yaml.kind == 'Pod':
         containers = yaml.spec.containers
     elif yaml.kind == 'Job':
         containers = yaml.spec.template.spec.containers
-
     resources = [(int(container.resources.requests[gpu]), int(container.resources.limits[gpu])) for container in containers]
     list_reqs, list_limits = zip(*resources)
     pod_resource_info = {
+        "replicas": 1,
         "request": sum(list_reqs),
         "limit": sum(list_limits)
     }
-    print(f'Request: {pod_resource_info["request"]} - {pod_resource_info["limit"]}')
+    return yaml, pod_resource_info
 
-    # 2. Get free resources as per quota
-    res = requests.get(f'{MANAGER_IP}:{MANAGER_PORT}{RQ_ENDPOINT}')
-    res_data = res.json()
-    free = int(res_data['limit']) - int(res_data['used'])
-    print(f'Available Quota: {free}')
-
-    # 3. Get free resources per node
-    response = requests.get(f'{MANAGER_IP}:{MANAGER_PORT}{NODE_ENDPOINT}')
-    node_info = response.json()
-    sorted_node_info = dict(sorted(node_info.items(), key=lambda item: item[1]))
-    filtered_nodes = {k:v for k,v in sorted_node_info.items() if v > pod_resource_info["request"]}
-    print(f'Num acceptable nodes: {len(filtered_nodes)}/{len(sorted_node_info)}')
-
-    # 4.1 Get min(node, limit, free) 
-    allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
-    #print(f'Alloted GPUs: {allot}')
-
-    # 4.2 Choose node with closest match to allot
-    # node = None
-    # for (node_name, free_gpus) in filtered_nodes:
-    #     if free_gpus >= allot:
-    #         node = node_name
-
-    # 4.3 Edit pod with request set to allot
-    remaining = allot
-    # for i, container in enumerate(pod.spec.containers):
-    #     diff = container.resources.limits[gpu] - container.resources.requests[gpu]
+def read_pytorch_yaml(spec_file):
+    print(f"Yaml kind: {yaml['kind']}")
+    yaml = yaml.safe_load(open(spec_file))
+    gpu = 'nvidia.com/gpu'
+    if yaml['kind'] == 'PyTorchJob':
+        master = yaml['spec']['pytorchReplicaSpecs']['Master']
+        replicas = master['replicas']
+        containers = master['template']['spec']['containers']
+        resources = [(int(container['resources']['requests'][gpu]), int(container['resources']['limits'][gpu])) for container in containers]
+        list_reqs, list_limits = zip(*resources)
+        pod_resource_info = {
+            "replicas": replicas,
+            "request": sum(list_reqs),
+            "limit": sum(list_limits)
+        }
+        return pod_resource_info
+    
+def set_pod_job_yaml(yaml, allot, pod_resource_info):
     if yaml.kind == 'pod':
         yaml.spec.containers[0].resources.requests[gpu] = allot
         yaml.spec.containers[0].resources.limits[gpu] = allot
@@ -76,23 +68,54 @@ def allot_gpu(spec_file):
         yaml.spec.template.spec.containers[0].resources.requests[gpu] = allot
         yaml.spec.template.spec.containers[0].resources.limits[gpu] = allot
 
+    yaml.metadata.annotations.update({k: "{}".format(v) for k,v in pod_resource_info.items()})
+    #yaml.createNamespacedPod(namespace='fms-tuning')
+    #yaml.deleteNamespaced
+    
+def get_free_quota():
+    res = requests.get(f'{MANAGER_IP}:{MANAGER_PORT}{RQ_ENDPOINT}')
+    res_data = res.json()
+    free = int(res_data['limit']) - int(res_data['used'])
+    print(f'Available Quota: {free}')
+    return free
+
+def get_free_per_node():
+    response = requests.get(f'{MANAGER_IP}:{MANAGER_PORT}{NODE_ENDPOINT}')
+    node_info = response.json()
+    sorted_node_info = dict(sorted(node_info.items(), key=lambda item: item[1], reverse=True))
+    return sorted_node_info
+    
+def allot_single_node(spec_file):
+    client = setup_k8s_client()
+
+    # 1. Read yaml of pod/job and get request/limit
+    yaml, pod_resource_info = read_pod_job_yaml(spec_file)
+    print(f'Request: {pod_resource_info["request"]} - {pod_resource_info["limit"]}')
+
+    # 2. Get free resources as per quota
+    free = get_free_quota()
+
+    # 3. Get free resources per node
+    sorted_node_info = get_free_per_node()
+    filtered_nodes = {k:v for k,v in sorted_node_info.items() if v > pod_resource_info["request"]}
+    print(f'Num acceptable nodes: {len(filtered_nodes)}/{len(sorted_node_info)}')
+
+    # 4.1 Get min(node, limit, free) 
+    allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
+
     print(f'Alloted GPUs: {allot}')
 
-    # 5.1 Annotate pod with request and limit
-    yaml.metadata.annotations.update({k: "{}".format(v) for k,v in pod_resource_info.items()})
+    # 5. Set allot, annotate with request and limit and deploy
+    set_pod_job_yaml(yaml, allot, pod_resource_info)
 
-    # 5.2 Deploy pod
-    #pod.createNamespacedPod(namespace='fms-tuning')
-
-    #pod.deleteNamespaced
-
-def alloc_multi_gpu():
+def alloc_multi_gpu(spec_file):
+    client = setup_k8s_client()
     # parse and get gpu req and limit
-    num_replica = 2
-    req_gpu = 4
-    limit_gpu = 6
+    pod_resource_info = read_pytorch_yaml(spec_file)
+    num_replica, req_gpu, limit_gpu = pod_resource_info["replicas"], pod_resource_info["request"], pod_resource_info["limit"]
+
     # find feasible gpus as per namespace quota
-    curr_quota = 10 #to be queried
+    curr_quota = get_free_quota()
     total_req_gpu = num_replica * req_gpu
     total_limit_gpu = num_replica * limit_gpu
     if total_req_gpu <= curr_quota & curr_quota <= total_limit_gpu:
@@ -104,8 +127,7 @@ def alloc_multi_gpu():
     print(new_req_gpu)
     
     # find for the above feasible gpus no.of gpus per pod in the job
-    node_info = {'rete-pok-ext-a100-01': 4, 'rete-pok-ext-a100-04': 2, 'rete-pok-ext-a100-05': 7, 'rete-pok-ext-a100-07': 6, 'rete-pok-ext-a100-10': 6, 'rete-pok-ext-a100-11': 1, 'rete-pok-ext-a100-14': 2, 'rete-pok-ext-a100-16': 1, 'rete-pok-ext-a100-17': 3, 'rete-pok-ext-a100-18': 2, 'rete-pok-ext-a30-01': 4, 'rete-pok-ext-a30-02': 4}
-    sorted_node_info = dict(sorted(node_info.items(), key=lambda item: item[1],reverse=True))
+    sorted_node_info = get_free_per_node()
     print(sorted_node_info)
     print(len(sorted_node_info))
     j = new_req_gpu
@@ -127,5 +149,5 @@ def alloc_multi_gpu():
        print("can allocate")
 
 if __name__ == "__main__":
-    fire.Fire(allot_gpu)
+    fire.Fire(allot_single_node)
     #allot_gpu('sample-pod.yaml')
