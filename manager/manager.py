@@ -7,59 +7,82 @@ Goals:
 5. Apply pod/job
 """
 
-from kubernetes import config, utils, client
-from kubernetes.client import ApiClient, CustomObjectsApi
+from kubernetes import config, utils
+from kubernetes import client as k8sclient
 import fire
 from utils import *
 
 def setup_k8s_client():
     # 0. Connect to the k8s client
     config.load_kube_config()
-    client = ApiClient()
+    client = k8sclient.ApiClient()
 
 def print_yaml(yaml):
     print(yaml)
-
-def deploy_yaml(client, yaml):
-    if yaml['kind'] == 'PyTorchJob':
-        customObjectApi = CustomObjectsApi(client)
-        api_version = yaml['apiVersion']
-        group = api_version[0: api_version.find('/')]
-        version = api_version[api_version.find('/') + 1:]
-        plural = yaml['kind'].lower() + 's'
-        customObjectApi.create_namespaced_custom_object(group, version, 'fms-tuning', plural, yaml)
-    else:
-        utils.create_from_yaml(client, yaml_objects = [yaml], namespace='fms-tuning')
 
 def allot_single_node(spec_file):
     client = setup_k8s_client()
 
     # 1. Read yaml of pod/job and get request/limit
-    yaml, pod_resource_info = read_yaml(spec_file)
+    yaml, pod_resource_info = parse_yaml(spec_file)
     print(f'Request: {pod_resource_info["request"]} - {pod_resource_info["limit"]}')
 
-    # 2. Get free resources as per quota
-    free = get_free_quota()
+    # 2. Get quota and node free resources
+    free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
 
-    # 3. Get free resources per node
-    sorted_node_info = get_free_per_node()
-    filtered_nodes = {k:v for k,v in sorted_node_info.items() if v > pod_resource_info["request"]}
-    print(f'Num acceptable nodes: {len(filtered_nodes)}/{len(sorted_node_info)}')
-
-    # 4.05 Check if multi-replica, then call alloc_multi_gpu
+    # 3.1 Check if multi-replica, then call alloc_multi_gpu
     if pod_resource_info["replicas"] != 1:
         alloc_multi_gpu(pod_resource_info, free, sorted_node_info)
 
-    # 4.1 Get min(node, limit, free) 
+    # 3.2 Get allot = min(node, limit, free) 
     allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
 
     print(f'Alloted GPUs: {allot}')
 
-    # 5.1 Set allot, annotate with request and limit 
-    yaml = set_yaml(yaml, allot, pod_resource_info)
+    # 4.1 Set allot, annotate with request and limit 
+    yaml = set_yaml(yaml, allot)
+    yaml = annotate_yaml(yaml, pod_resource_info)
 
-    # 5.2 Deploy yaml
+    # 4.2 Deploy yaml
     deploy_yaml(client, yaml)
+
+def job_to_scale():
+    return "sample-pytorchjob"
+
+def scaling():
+    client = setup_k8s_client()
+
+    # 0. Decide which job to scale
+    job_name = job_to_scale()
+
+    # 1.1 Use annotations to get job request/limit
+    yaml, pod_resource_info = get_info_from_annotations(client, job_name)
+
+    # 1.2 Get GPU assignment of this job from yaml
+    _, assn = parse_yaml(yaml)
+    assigned_gpus = assn['request']
+
+    # 2.0 Find pod(s) associated and get node(s) assigned
+    podlist = k8sclient.CoreV1Api(client).list_namespaced_pod(namespace='fms-tuning', label_selector='training.kubeflow.org/job-name={}'.format(job_name))
+    pod = podlist.items[0]
+
+    # 2.1 Get quota and node free resources
+    free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
+
+    # 2.2 Count current assignment as free
+    free += assigned_gpus
+    #node_name = pod['node_name']
+
+    # 3.1 TODO: Add multi-gpu later
+
+    # 3.2 Allot new gpus
+    allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
+    print(f'Alloted GPUs: {allot}')
+
+    # 4.1 Edit resource, limit and command and deploy
+    yaml = edit_yaml_resources(client, job_name, allot)
+
+    # 4.2 Delete pod to respawn automatically
 
 def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
     num_replica, req_gpu, limit_gpu = pod_resource_info["replicas"], pod_resource_info["request"], pod_resource_info["limit"]
@@ -100,5 +123,14 @@ def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
 
     # TODO: add deployment logic later
 
+def main(scale: bool = False, spec_file = None):
+    if scale == True:
+        scaling()
+    else:
+        if spec_file == None:
+            raise RuntimeError("spec_file argument required")
+        else:
+            allot_single_node(spec_file)
+
 if __name__ == "__main__":
-    fire.Fire(allot_single_node)
+    fire.Fire(main)
