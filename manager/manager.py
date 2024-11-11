@@ -46,6 +46,10 @@ def allot_single_node(spec_file):
     filtered_nodes = {k:v for k,v in sorted_node_info.items() if v > pod_resource_info["request"]}
     print(f'Num acceptable nodes: {len(filtered_nodes)}/{len(sorted_node_info)}')
 
+    # 4.05 Check if multi-replica, then call alloc_multi_gpu
+    if pod_resource_info["replicas"] != 1:
+        alloc_multi_gpu(pod_resource_info, free, sorted_node_info)
+
     # 4.1 Get min(node, limit, free) 
     allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
 
@@ -57,10 +61,7 @@ def allot_single_node(spec_file):
     # 5.2 Deploy yaml
     deploy_yaml(client, yaml)
 
-def alloc_multi_gpu(spec_file):
-    client = setup_k8s_client()
-    # parse and get gpu req and limit
-    pod_resource_info = read_pytorch_yaml(spec_file)
+def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
     num_replica, req_gpu, limit_gpu = pod_resource_info["replicas"], pod_resource_info["request"], pod_resource_info["limit"]
 
     # find feasible gpus as per namespace quota
@@ -96,8 +97,8 @@ def alloc_multi_gpu(spec_file):
        print("cannot allocate")
     else:
        print("can allocate")
-    
+
+    # TODO: add deployment logic later
 
 if __name__ == "__main__":
     fire.Fire(allot_single_node)
-    #allot_gpu('sample-pod.yaml')
