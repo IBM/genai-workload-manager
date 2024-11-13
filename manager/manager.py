@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Goals:
 1. Read k8s yaml of pod/job
@@ -7,24 +8,29 @@ Goals:
 5. Apply pod/job
 """
 
-from kubernetes import config, utils
-from kubernetes import client as k8sclient
-import fire
+from kubernetes import config, utils, client
+import click
 from utils import *
 
 def setup_k8s_client():
     # 0. Connect to the k8s client
     config.load_kube_config()
-    client = k8sclient.ApiClient()
+    return client.ApiClient()
 
 def print_yaml(yaml):
     print(yaml)
 
-def allot_single_node(spec_file):
+@click.group()
+def main():
+    pass
+
+@main.command()
+@click.option('-f', '--filename', help="Input spec file", required=True)
+def deploy(filename):
     client = setup_k8s_client()
 
     # 1. Read yaml of pod/job and get request/limit
-    yaml, pod_resource_info = parse_yaml(spec_file)
+    yaml, pod_resource_info = parse_yaml(filename)
     print(f'Request: {pod_resource_info["request"]} - {pod_resource_info["limit"]}')
 
     # 2. Get quota and node free resources
@@ -36,7 +42,6 @@ def allot_single_node(spec_file):
 
     # 3.2 Get allot = min(node, limit, free) 
     allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
-
     print(f'Alloted GPUs: {allot}')
 
     # 4.1 Set allot, annotate with request and limit 
@@ -45,15 +50,19 @@ def allot_single_node(spec_file):
 
     # 4.2 Deploy yaml
     deploy_yaml(client, yaml)
+    print(f"Deployed resource: {yaml['metadata']['name']}")
 
 def job_to_scale():
     return "sample-pytorchjob"
 
-def scaling():
+@main.command()
+@click.option("--name")
+def scale(name):
     client = setup_k8s_client()
 
     # 0. Decide which job to scale
-    job_name = job_to_scale()
+    job_name = name if name is not None else job_to_scale()
+    print(f'Scaling pytorchjob: {job_name}')
 
     # 1.1 Use annotations to get job request/limit
     yaml, pod_resource_info = get_info_from_annotations(client, job_name)
@@ -61,28 +70,40 @@ def scaling():
     # 1.2 Get GPU assignment of this job from yaml
     _, assn = parse_yaml(yaml)
     assigned_gpus = assn['request']
+    print(f'Request: {pod_resource_info["request"]} - {pod_resource_info["limit"]}, Alloted: {assigned_gpus}')
 
-    # 2.0 Find pod(s) associated and get node(s) assigned
-    podlist = k8sclient.CoreV1Api(client).list_namespaced_pod(namespace='fms-tuning', label_selector='training.kubeflow.org/job-name={}'.format(job_name))
-    pod = podlist.items[0]
-
-    # 2.1 Get quota and node free resources
+    # 2.0 Get quota and node free resources
     free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
 
-    # 2.2 Count current assignment as free
-    free += assigned_gpus
-    #node_name = pod['node_name']
+    podlist = get_pod_by_selector(client, job_name)
+    # 2.1 Find pod(s) associated and get node(s) assigned
+    if len(podlist.items) != 0:
+        pod = podlist.items[0]
+
+        # 2.2 Count current assignment as free
+        free += assigned_gpus
+        #node_name = pod['node_name']
 
     # 3.1 TODO: Add multi-gpu later
 
     # 3.2 Allot new gpus
     allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
-    print(f'Alloted GPUs: {allot}')
+    print(f'New allotment: {allot}')
 
-    # 4.1 Edit resource, limit and command and deploy
-    yaml = edit_yaml_resources(client, job_name, allot)
+    if allot != assigned_gpus:
+        # 4.1 Edit resource, limit and command and deploy
+        print("Patching object with new resource allotment")
+        yaml = patch_job_resources(client, job_name, allot)
+        old_command = get_nested_value(yaml, 'spec.pytorchReplicaSpecs.Master.template.spec.containers.0.command')
+        new_command = [ x.replace(f'--num_processes={assigned_gpus}', f'--num_processes={allot}') for x in old_command]
+        patch_job_command(client, job_name, new_command)
 
-    # 4.2 Delete pod to respawn automatically
+        # 4.2 Delete pod to respawn automatically
+        if len(podlist.items) != 0:
+            pod_name = podlist.items[0].metadata.name
+            kill_pod(client, pod_name)
+    else:
+        print("No changes to resource, doing nothing...")
 
 def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
     num_replica, req_gpu, limit_gpu = pod_resource_info["replicas"], pod_resource_info["request"], pod_resource_info["limit"]
@@ -123,14 +144,5 @@ def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
 
     # TODO: add deployment logic later
 
-def main(scale: bool = False, spec_file = None):
-    if scale == True:
-        scaling()
-    else:
-        if spec_file == None:
-            raise RuntimeError("spec_file argument required")
-        else:
-            allot_single_node(spec_file)
-
 if __name__ == "__main__":
-    fire.Fire(main)
+    main()

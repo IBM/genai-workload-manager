@@ -12,6 +12,19 @@ NODE_ENDPOINT='/freegpu'
 =================== yaml parsing related helpers ===================
 ====================================================================
 """
+def get_nested_value(data, path):
+    if isinstance(path, str):
+        path = path.split('.')
+
+    for key in path:
+        if isinstance(data, dict) and key in data:
+            data = data[key]
+        elif key == '0':
+            data = data[0]
+        else:
+            return None
+    return data
+
 def parse_yaml(yaml_input):
     yaml = None
     if isinstance(yaml_input, str):
@@ -72,9 +85,8 @@ def set_yaml(yaml, allot):
 
 def annotate_yaml(yaml, pod_resource_info):
     if 'annotations' not in yaml['metadata']:
-        yaml['metadata']['annotations'] = pod_resource_info
-    else:
-        yaml['metadata']['annotations'].update({k: "{}".format(v) for k,v in pod_resource_info.items()})
+        yaml['metadata']['annotations'] = {}
+    yaml['metadata']['annotations'].update({k: "{}".format(v) for k,v in pod_resource_info.items()})
 
     return yaml
 
@@ -109,11 +121,18 @@ def get_free_per_node():
 ====================== k8s API related helpers =====================
 ====================================================================
 """
-from kubernetes.client import CustomObjectsApi
+from kubernetes.client import CustomObjectsApi, CoreV1Api
 GROUP="kubeflow.org"
 VERSION="v1"
 NAMESPACE="fms-tuning"
 PLURAL="pytorchjobs"
+
+def get_pod_by_selector(client, name):
+    podlist = CoreV1Api(client).list_namespaced_pod(namespace='fms-tuning', label_selector='training.kubeflow.org/job-name={}'.format(name))
+    return podlist
+
+def kill_pod(client, name):
+    return CoreV1Api(client).delete_namespaced_pod(namespace='fms-tuning', name=name)
 
 def deploy_yaml(client, yaml):
     if yaml['kind'] == 'PyTorchJob':
@@ -130,12 +149,20 @@ def kill_job(client, name):
     customObjectApi = CustomObjectsApi(client)
     customObjectApi.delete_namespaced_custom_object(group=GROUP, version=VERSION, plural=PLURAL, namespace=NAMESPACE, name=name)
 
-def edit_yaml_resources(client, job_name, allot):
-    patch_body = {"spec":{"pytorchReplicaSpecs":{"Master": {"template":{"spec":{"containers":[{"name":"pytorch","resources":{"requests":{"nvidia.com/gpu":allot,},"limits":{"nvidia.com/gpu":allot }}}]}}}}}}
-    return patch_yaml(client, job_name, patch_body)
+def patch_job_resources(client, job_name, allot):
+    patch_body = [
+        {"op": "replace", "path": "/spec/pytorchReplicaSpecs/Master/template/spec/containers/0/resources/requests/nvidia.com~1gpu", "value": allot},
+        {"op": "replace", "path": "/spec/pytorchReplicaSpecs/Master/template/spec/containers/0/resources/limits/nvidia.com~1gpu", "value": allot},
+    ]
+    return patch_job(client, job_name, patch_body)
 
-def patch_yaml(client, name, patch_body):
+def patch_job_command(client, job_name, command):
+    patch_body = [{"op": "replace", "path": "/spec/pytorchReplicaSpecs/Master/template/spec/containers/0/command", "value": command }]
+    return patch_job(client, job_name, patch_body)
+
+def patch_job(client, name, patch_body):
     customObjectApi = CustomObjectsApi(client)
+    customObjectApi.api_client.set_default_header('Content-Type', 'application/json-patch+json')
     return customObjectApi.patch_namespaced_custom_object(group=GROUP, version=VERSION, plural=PLURAL, namespace=NAMESPACE, name=name, body=patch_body)
 
 def get_info_from_annotations(client, name):
