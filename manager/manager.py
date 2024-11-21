@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Goals:
 1. Read k8s yaml of pod/job
@@ -9,7 +8,6 @@ Goals:
 """
 
 from kubernetes import config, utils, client
-import click
 from utils import *
 
 def setup_k8s_client():
@@ -20,12 +18,6 @@ def setup_k8s_client():
 def print_yaml(yaml):
     print(yaml)
 
-@click.group()
-def main():
-    pass
-
-@main.command()
-@click.option('-f', '--filename', help="Input spec file", required=True)
 def deploy(filename):
     client = setup_k8s_client()
 
@@ -55,8 +47,6 @@ def deploy(filename):
 def job_to_scale():
     return "sample-pytorchjob"
 
-@main.command()
-@click.option("--name")
 def scale(name):
     client = setup_k8s_client()
 
@@ -143,6 +133,3 @@ def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
        print("can allocate")
 
     # TODO: add deployment logic later
-
-if __name__ == "__main__":
-    main()

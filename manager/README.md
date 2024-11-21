@@ -7,9 +7,28 @@ Run the monitoring component first:
 MHOST='0.0.0.0' MPORT=6000 python3 monitor.py
 ```
 
-Then, run the manager by passing an input yaml:
+## Deploy
+Then, run the manager and pass input yaml:
 ```
-python3 manager.py <file>.yaml
+python3 manager.py deploy -f sample-pytorchjob.yaml
 ```
 
 Currently, the manager supports pod, job and PyTorch job. An example file for each is also in the repo.
+
+## Scale
+To scale, run:
+```
+python3 manager.py scale --name sample-pytorchjob
+```
+
+We will add functionality to choose the best job to scale up in the future.
+
+Currently, you can see the scale functionality quickly in action using the `scale.yaml`, which is a hand-crafted yaml where the pods are allocated 1 GPU each, while the annotations show that they can go up to 3 GPUs.
+
+Deploy the job first and then run scale:
+```
+oc deploy -f scale.yaml
+python3 manager.py scale --name sample-pytorchjob
+```
+
+If atleast 2/3 GPUs are available, then the script will patch the pytorch yaml and kill the pod to ensure new pod comes up.
