@@ -68,18 +68,25 @@ def parse_yaml(yaml_input):
 
 def set_yaml(yaml, allot):
     gpu = 'nvidia.com/gpu'
+    # Set allot on requests and limits
     if yaml['kind'] == 'Pod':
-        yaml['spec']['containers'][0]['resources']['requests'][gpu] = allot
-        yaml['spec']['containers'][0]['resources']['limits'][gpu] = allot
+        for res in ['requests', 'limits']:
+            yaml['spec']['containers'][0]['resources'][res][gpu] = allot
+        for i, _ in enumerate(yaml['spec']['containers'][0]['env']):
+            if yaml['spec']['containers'][0]['env'][i]['name'] == "NGPU":
+                yaml['spec']['containers'][0]['env'][i]['value'] = str(allot)
     elif yaml['kind'] == 'Job':
-        yaml['spec']['template']['spec']['containers'][0]['resources']['requests'][gpu] = allot
-        yaml['spec']['template']['spec']['containers'][0]['resources']['limits'][gpu] = allot
+        for res in ['requests', 'limits']:
+            yaml['spec']['template']['spec']['containers'][0]['resources'][res][gpu] = allot
     elif yaml['kind'] == 'PyTorchJob':
         typ = 'Master'
         if 'Worker' in yaml['spec']['pytorchReplicaSpecs']:
             typ = 'Worker'
-        yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['resources']['requests'][gpu] = allot
-        yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['resources']['limits'][gpu] = allot
+        for res in ['requests', 'limits']:
+            yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['resources'][res][gpu] = allot
+        for i, _ in enumerate(yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['env']):
+            if yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['env'][i]['name'] == 'NGPU':
+                yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['env'][i]['value'] = str(allot)
 
     return yaml
 
