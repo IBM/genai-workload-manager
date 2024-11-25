@@ -3,13 +3,6 @@
 
 This is a Flask-based Python application for managing job metadata. It provides APIs to add, update, retrieve, and delete job data. Metadata is stored persistently in a file that can be mounted on a volume in a containerized environment.
 
-## Features
-- **Add a job** with required metadata.
-- **Update last checkpoint** for a job, including computing time between checkpoints.
-- **Delete a job** by its `job_id`.
-- **Retrieve jobs** based on various filters and sorting criteria.
-- Persistent storage using a mounted file (`jobs_metadata.json`).
-
 ---
 
 ## Setup Instructions
@@ -44,7 +37,6 @@ python job_metadata_manager.py
 
 The app will start and listen on `http://127.0.0.1:<FLASK_PORT>` (default: `5000`).
 
----
 
 ## API Endpoints
 
@@ -64,7 +56,6 @@ curl -X POST http://127.0.0.1:5000/add_job -H "Content-Type: application/json" -
 }'
 ```
 
----
 
 ### Update Last Checkpoint
 **Endpoint:** `/update_last_checkpoint`  
@@ -79,7 +70,6 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 }'
 ```
 
----
 
 ### Delete Job
 **Endpoint:** `/delete_job`  
@@ -90,7 +80,6 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/json" -d '{"job_id": "job_1"}'
 ```
 
----
 
 ### Get Job by ID
 **Endpoint:** `/get_job/<job_id>`  
@@ -101,8 +90,6 @@ curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/js
 curl http://127.0.0.1:5000/get_job/job_1
 ```
 
----
-
 ### Get All Jobs (Sorted by Arrival Time)
 **Endpoint:** `/get_jobs_by_arrival`  
 **Method:** `GET`
@@ -111,8 +98,6 @@ curl http://127.0.0.1:5000/get_job/job_1
 ```bash
 curl http://127.0.0.1:5000/get_jobs_by_arrival
 ```
-
----
 
 ### Get Jobs (Sorted by Checkpoint Time, Limit-Assigned > 0)
 **Endpoint:** `/get_jobs_by_checkpoint_limit`  
@@ -123,9 +108,7 @@ curl http://127.0.0.1:5000/get_jobs_by_arrival
 curl http://127.0.0.1:5000/get_jobs_by_checkpoint_limit
 ```
 
----
-
-### Get Jobs (Sorted by Checkpoint Time, Limit-Assigned == X)
+### Get Jobs (Sorted by Checkpoint Time, Limit-Assigned == x)
 **Endpoint:** `/get_jobs_by_difference/<x>`  
 **Method:** `GET`
 
@@ -133,6 +116,3 @@ curl http://127.0.0.1:5000/get_jobs_by_checkpoint_limit
 ```bash
 curl http://127.0.0.1:5000/get_jobs_by_difference/2
 ```
-
----
-
