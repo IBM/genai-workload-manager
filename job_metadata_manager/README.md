@@ -47,7 +47,7 @@ The app will start and listen on `http://127.0.0.1:<FLASK_PORT>` (default: `5000
 **Sample Request:**
 ```bash
 curl -X POST http://127.0.0.1:5000/add_job -H "Content-Type: application/json" -d '{
-  "job_id": "job_1",
+  "job_name": "job_1",
   "gpu_req": 2,
   "gpu_lim": 4,
   "gpu_assigned": 2,
@@ -64,7 +64,7 @@ curl -X POST http://127.0.0.1:5000/add_job -H "Content-Type: application/json" -
 **Sample Request:**
 ```bash
 curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: application/json" -d '{
-  "job_id": "job_1",
+  "job_name": "job_1",
   "last_checkpoint_time": 1701234567,
   "completed_epochs": 10
 }'
@@ -77,12 +77,12 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 
 **Sample Request:**
 ```bash
-curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/json" -d '{"job_id": "job_1"}'
+curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/json" -d '{"job_name": "job_1"}'
 ```
 
 
 ### Get Job by ID
-**Endpoint:** `/get_job/<job_id>`  
+**Endpoint:** `/get_job/<job_name>`  
 **Method:** `GET`
 
 **Sample Request:**
