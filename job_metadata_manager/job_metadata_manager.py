@@ -8,11 +8,7 @@ app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
-DATA_FILE = './data/jobs_metadata.json'
-DATA_DIR = './data'
-
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
+DATA_FILE = '/data/seep/jobs_metadata.json'
 
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, 'w') as f:
@@ -31,13 +27,13 @@ def save_jobs_to_storage():
 @app.route('/add_job', methods=['POST'])
 def add_job():
     data = request.json
-    job_id = data.get('job_id')
+    job_name = data.get('job_name')
 
-    if not job_id:
-        return jsonify({"error": "job_id is required"}), 400
+    if not job_name:
+        return jsonify({"error": "job_name is required"}), 400
 
-    if job_id in jobs:
-        return jsonify({"error": "Job with this job_id already exists"}), 400
+    if job_name in jobs:
+        return jsonify({"error": "Job with this job_name already exists"}), 400
 
     mandatory_fields = ["gpu_req", "gpu_lim", "gpu_assigned"]
     for field in mandatory_fields:
@@ -48,7 +44,7 @@ def add_job():
     job_arrival_time = data.get("job_arrival_time", int(datetime.utcnow().timestamp()))
 
     job = {
-        "job_id": job_id,
+        "job_name": job_name,
         "gpu_req": data["gpu_req"],
         "gpu_lim": data["gpu_lim"],
         "gpu_assigned": data["gpu_assigned"],
@@ -59,23 +55,23 @@ def add_job():
         "completed_epochs": 0,
         "time_bw_checkpoints": None
     }
-    jobs[job_id] = job
+    jobs[job_name] = job
     save_jobs_to_storage()
 
-    logging.info(f"Added new job: {job_id}")
+    logging.info(f"Added new job: {job_name}")
     return jsonify({"message": "Job added successfully", "job": job}), 201
 
 @app.route('/update_last_checkpoint', methods=['PUT'])
 def update_last_checkpoint():
     data = request.json
-    job_id = data.get('job_id')
+    job_name = data.get('job_name')
     last_checkpoint_time = data.get('last_checkpoint_time')
     completed_epochs = data.get('completed_epochs')
 
-    if not job_id or last_checkpoint_time is None or completed_epochs is None:
-        return jsonify({"error": "job_id, last_checkpoint_time, and completed_epochs are required"}), 400
+    if not job_name or last_checkpoint_time is None or completed_epochs is None:
+        return jsonify({"error": "job_name, last_checkpoint_time, and completed_epochs are required"}), 400
 
-    job = jobs.get(job_id)
+    job = jobs.get(job_name)
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -88,29 +84,29 @@ def update_last_checkpoint():
 
     save_jobs_to_storage()
 
-    logging.info(f"Updated checkpoint for job: {job_id}")
+    logging.info(f"Updated checkpoint for job: {job_name}")
     return jsonify({"message": "Job updated successfully", "job": job}), 200
 
 @app.route('/delete_job', methods=['DELETE'])
 def delete_job():
     data = request.json
-    job_id = data.get('job_id')
+    job_name = data.get('job_name')
 
-    if not job_id:
-        return jsonify({"error": "job_id is required"}), 400
+    if not job_name:
+        return jsonify({"error": "job_name is required"}), 400
 
-    job = jobs.pop(job_id, None)
+    job = jobs.pop(job_name, None)
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
     save_jobs_to_storage()
 
-    logging.info(f"Deleted job: {job_id}")
+    logging.info(f"Deleted job: {job_name}")
     return jsonify({"message": "Job deleted successfully"}), 200
 
-@app.route('/get_job/<job_id>', methods=['GET'])
-def get_job(job_id):
-    job = jobs.get(job_id)
+@app.route('/get_job/<job_name>', methods=['GET'])
+def get_job(job_name):
+    job = jobs.get(job_name)
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job), 200

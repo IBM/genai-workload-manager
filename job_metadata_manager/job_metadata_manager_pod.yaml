@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: job-metadata-manager
+spec:
+  containers:
+    - name: job-metadata-manager
+      image: quay.io/genai-workload-manager/job_metadata_manager
+      ports:
+        - containerPort: 5000
+      env:
+        - name: FLASK_PORT
+          value: "5000"
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: fms-tuning-pvc
