@@ -42,7 +42,12 @@ def deploy(filename):
 
     # 4.2 Deploy yaml
     deploy_yaml(client, yaml)
-    print(f"Deployed resource: {yaml['metadata']['name']}")
+    name = yaml['metadata']['name']
+    print(f"Deployed resource: {name}")
+
+    # 5. Inform job manager
+    add_job(name, pod_resource_info, allot)
+
 
 def job_to_scale():
     return "sample-pytorchjob"

@@ -180,3 +180,31 @@ def get_info_from_annotations(client, name):
     job_annotations = job['metadata']['annotations']
     pod_resource_info = dict(list(map(lambda x: (x, int(job_annotations[x])), ['replicas', 'request', 'limit'])))
     return job, pod_resource_info
+
+
+
+"""
+====================================================================
+========================= job manager API ==========================
+====================================================================
+"""
+import requests
+
+JOB_MANAGER_ENDPOINT="http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000"
+def add_job(job_name, pod_resource_info, allot):
+    data = {
+        "job_name": job_name,
+        "gpu_req": pod_resource_info["request"],
+        "gpu_lim": pod_resource_info["limit"],
+        "gpu_assigned": allot,
+        "replicas": pod_resource_info["replicas"],
+    }
+    resp = requests.post(f'{JOB_MANAGER_ENDPOINT}/add_job', json=data)
+    if resp.status_code != 201:
+        print("Adding job info failed: ", resp.json())
+    else:
+        print("Added job info")
+
+def pick_job_to_scale():
+    resp = requests.post(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_checkpoint_limit')
+    return resp
