@@ -31,6 +31,10 @@ spec:
            mountPath: /modelops
          - name: scratch
            mountPath: /new_data
+      env:
+         - name: NGPU
+           value: "3"
+            
   imagePullSecrets:
     - name: modelops-deps-pullsecret
   schedulerName: scheduler-plugins-scheduler

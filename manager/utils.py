@@ -129,6 +129,8 @@ def get_free_per_node():
 ====================================================================
 """
 from kubernetes.client import CustomObjectsApi, CoreV1Api
+from kubernetes import utils
+
 GROUP="kubeflow.org"
 VERSION="v1"
 NAMESPACE="fms-tuning"
