@@ -44,8 +44,13 @@ def getfreegpu():
 def getresourcequota(ns):
     print(f'{ns}')
     ns = f'{ns}'
-    config.load_kube_config()   
-    v1 = client.CoreV1Api()
+    v1 = None
+    try:
+        config.load_kube_config()   
+        v1 = client.CoreV1Api()
+    except Exception as e:
+        cl = client.ApiClient(configuration=config.load_incluster_config())
+        v1 = cl.CoreV1Api()
     hard = v1.list_namespaced_resource_quota(ns).items[0].status.hard['requests.nvidia.com/gpu']
     used = v1.list_namespaced_resource_quota(ns).items[0].status.used['requests.nvidia.com/gpu']
     quota = {'limit':hard,'used':used}
