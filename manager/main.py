@@ -8,8 +8,9 @@ def main():
 
 @main.command()
 @click.option('-f', '--filename', help="Input spec file", required=True)
-def deploy(filename):
-    manager.deploy(filename)
+@click.option('--standalone', is_flag=True, help="Standalone deployment vs pod", default=False)
+def deploy(filename, standalone):
+    manager.deploy(filename, standalone)
 
 @main.command()
 @click.option("--name")

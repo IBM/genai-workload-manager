@@ -205,6 +205,15 @@ def add_job(job_name, pod_resource_info, allot):
     else:
         print("Added job info")
 
-def pick_job_to_scale():
-    resp = requests.post(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_checkpoint_limit')
-    return resp
+def job_to_scale():
+    print("Getting jobs by checkpoint limit")
+    resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_checkpoint_limit')
+
+    if resp == None or len(resp.json()) == 0:
+        resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_arrival')
+        print("Getting jobs by arrival")
+        if resp == None or len(resp.json()) == 0:
+            return None
+
+    jobs = resp.json()
+    return jobs[0]["job_name"]

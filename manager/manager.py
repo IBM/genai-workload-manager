@@ -10,16 +10,19 @@ Goals:
 from kubernetes import config, utils, client
 from utils import *
 
-def setup_k8s_client():
+def setup_k8s_client(standalone):
     # 0. Connect to the k8s client
-    config.load_kube_config()
-    return client.ApiClient()
+    if standalone:
+        config.load_kube_config()
+        return client.ApiClient()
+    else:
+        return client.ApiClient(configuration=config.load_incluster_config())
 
 def print_yaml(yaml):
     print(yaml)
 
-def deploy(filename):
-    client = setup_k8s_client()
+def deploy(filename, standalone=False):
+    client = setup_k8s_client(standalone)
 
     # 1. Read yaml of pod/job and get request/limit
     yaml, pod_resource_info = parse_yaml(filename)
@@ -48,15 +51,15 @@ def deploy(filename):
     # 5. Inform job manager
     add_job(name, pod_resource_info, allot)
 
-
-def job_to_scale():
-    return "sample-pytorchjob"
-
 def scale(name):
     client = setup_k8s_client()
 
     # 0. Decide which job to scale
     job_name = name if name is not None else job_to_scale()
+    if job_name == None:
+        print("No jobs to scale")
+        return
+    
     print(f'Scaling pytorchjob: {job_name}')
 
     # 1.1 Use annotations to get job request/limit

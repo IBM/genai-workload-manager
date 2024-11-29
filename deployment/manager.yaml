@@ -1,0 +1,87 @@
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: workload-manager
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - nodes
+  verbs:
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  verbs:
+  - get
+  - watch
+  - list
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workload-manager-sa
+  namespace: fms-tuning
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: workload-manager
+  namespace: fms-tuning
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workload-manager
+subjects:
+- kind: ServiceAccount
+  name: workload-manager-sa
+  namespace: fms-tuning
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: genai-workload-manager2
+spec:
+  serviceAccountName: workload-manager-sa
+  containers:
+    - name: base
+      image: nvcr.io/nvidia/pytorch:24.09-py3
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -c
+        - |
+          #tail -f /dev/null
+          GIT_SSH_COMMAND='ssh -i /root/.ssh/ssh-privatekey -o IdentitiesOnly=yes' git clone git@github.ibm.com:ai-platform-engg-irl/genai-workload-manager.git
+          cd genai-workload-manager/monitoring && cp /root/.ssh/prometheus ./ && pip install -r requirements.txt && MHOST='0.0.0.0' MPORT=6000 python3 monitor.py
+      resources:
+        requests:
+          cpu: 1
+          nvidia.com/gpu: 0
+          memory: 1Gi
+        limits:
+          cpu: 1
+          nvidia.com/gpu: 0
+          memory: 1Gi
+      volumeMounts:
+         - name: dshm
+           mountPath: "/dev/shm"
+         - name: github-ssh-secret
+           mountPath: "/root/.ssh"
+           readOnly: true
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+    - name: github-ssh-secret
+      secret:
+        secretName: workload-manager-secret
+        defaultMode: 0600
+---
