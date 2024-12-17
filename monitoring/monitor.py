@@ -40,17 +40,16 @@ def getfreegpu():
                #gpu_list[temp_data[itr]["metric"]["Hostname"]].append(temp_data[itr]["metric"]["gpu"])
                free_gpu_list[temp_data[itr]["metric"]["Hostname"]] += 1
     return jsonify(free_gpu_list), 200
+
 @app.route('/resourcequota/<ns>', methods=['GET'])
 def getresourcequota(ns):
     print(f'{ns}')
     ns = f'{ns}'
-    v1 = None
     try:
         config.load_kube_config()   
-        v1 = client.CoreV1Api()
     except Exception as e:
-        cl = client.ApiClient(configuration=config.load_incluster_config())
-        v1 = cl.CoreV1Api()
+        config.load_incluster_config()
+    v1 = client.CoreV1Api()
     hard = v1.list_namespaced_resource_quota(ns).items[0].status.hard['requests.nvidia.com/gpu']
     used = v1.list_namespaced_resource_quota(ns).items[0].status.used['requests.nvidia.com/gpu']
     quota = {'limit':hard,'used':used}

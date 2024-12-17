@@ -14,9 +14,9 @@ def setup_k8s_client(standalone):
     # 0. Connect to the k8s client
     if standalone:
         config.load_kube_config()
-        return client.ApiClient()
     else:
-        return client.ApiClient(configuration=config.load_incluster_config())
+        config.load_incluster_config()
+    return client.ApiClient()
 
 def print_yaml(yaml):
     print(yaml)
@@ -49,7 +49,10 @@ def deploy(filename, standalone=False):
     print(f"Deployed resource: {name}")
 
     # 5. Inform job manager
-    add_job(name, pod_resource_info, allot)
+    try:
+        add_job(name, pod_resource_info, allot)
+    except Exception as e:
+        print("Did not inform job manager")
 
 def scale(name):
     client = setup_k8s_client()
