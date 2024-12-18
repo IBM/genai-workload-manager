@@ -8,14 +8,18 @@ def main():
 
 @main.command()
 @click.option('-f', '--filename', help="Input spec file", required=True)
-@click.option('--standalone', is_flag=True, help="Standalone deployment vs pod", default=False)
-def deploy(filename, standalone):
-    manager.deploy(filename, standalone)
+def deploy(filename):
+    manager.deploy(filename)
 
 @main.command()
 @click.option("--name")
 def scale(name):
     manager.scale(name)
+
+@main.command()
+@click.option("--name")
+def delete(name):
+    manager.delete(name)
 
 if __name__ == "__main__":
     main()

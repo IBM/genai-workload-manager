@@ -205,6 +205,17 @@ def add_job(job_name, pod_resource_info, allot):
     else:
         print("Added job info")
 
+def delete_job(job_name):
+    data = {
+        "job_name": job_name
+    }
+
+    resp = requests.delete(f'{JOB_MANAGER_ENDPOINT}/delete_job', json=data)
+    if resp.status_code != 200:
+        print("Deleting job failed: ", resp.json())
+    else:
+        print("Deleted job")
+
 def job_to_scale():
     print("Getting jobs by checkpoint limit")
     resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_checkpoint_limit')

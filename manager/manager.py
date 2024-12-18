@@ -10,19 +10,19 @@ Goals:
 from kubernetes import config, utils, client
 from utils import *
 
-def setup_k8s_client(standalone):
+def setup_k8s_client():
     # 0. Connect to the k8s client
-    if standalone:
+    try:
         config.load_kube_config()
-    else:
+    except Exception as e:
         config.load_incluster_config()
     return client.ApiClient()
 
 def print_yaml(yaml):
     print(yaml)
 
-def deploy(filename, standalone=False):
-    client = setup_k8s_client(standalone)
+def deploy(filename):
+    client = setup_k8s_client()
 
     # 1. Read yaml of pod/job and get request/limit
     yaml, pod_resource_info = parse_yaml(filename)
@@ -52,7 +52,19 @@ def deploy(filename, standalone=False):
     try:
         add_job(name, pod_resource_info, allot)
     except Exception as e:
-        print("Did not inform job manager")
+        print(f'Did not inform job manager: {e}')
+
+def delete(name):
+    client = setup_k8s_client()
+
+    # 1. Delete job
+    kill_job(client, name)
+
+    # 2. Inform job manager
+    try:
+        delete_job(name)
+    except Exception as e:
+        print(f'Did not inform job manager: {e}')
 
 def scale(name):
     client = setup_k8s_client()
