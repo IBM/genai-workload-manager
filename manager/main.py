@@ -12,12 +12,12 @@ def deploy(filename):
     manager.deploy(filename)
 
 @main.command()
-@click.option("--name")
+@click.option("-n", "--name", help="Name of job to scale")
 def scale(name):
     manager.scale(name)
 
 @main.command()
-@click.option("--name")
+@click.option("-n", "--name", help="Name of job to delete", required=True)
 def delete(name):
     manager.delete(name)
 
