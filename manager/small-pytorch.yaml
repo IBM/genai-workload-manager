@@ -72,7 +72,6 @@ spec:
               value: ssh -i /tmp/.ssh/keys/id_rsa -o UserKnownHostsFile=/tmp/.ssh/hosts/known_hosts
                 -vv
             image: quay.io/genai-workload-manager/sft-trainer:wrldmgr
-            imagePullPolicy: Always
             name: pytorch
             resources:
               limits:
@@ -100,7 +99,7 @@ spec:
           volumes:
           - name: cos1
             persistentVolumeClaim:
-              claimName: my-training-cos-pvc1
+              claimName: my-training-cos-pvc-test1
           - name: hfcache
             persistentVolumeClaim:
               claimName: fms-tuning-pvc
