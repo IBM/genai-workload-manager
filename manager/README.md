@@ -32,3 +32,11 @@ python3 manager.py scale --name sample-pytorchjob
 ```
 
 If atleast 2/3 GPUs are available, then the script will patch the pytorch yaml and kill the pod to ensure new pod comes up.
+
+
+
+## Job manager
+
+```
+curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_jobs_by_checkpoint_limit
+```

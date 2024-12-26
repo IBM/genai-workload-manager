@@ -1,5 +1,6 @@
 from kubernetes import client, config,watch
 import time
+from manager import scale
 
 def getpytorchjobstatus(interval):
     try:
@@ -17,6 +18,7 @@ def getpytorchjobstatus(interval):
                 print("send to workload mgr")
                 print(event['object'].message)
                 t_sent = t_now
+                scale()
              
 tp = 10
 getpytorchjobstatus(tp)

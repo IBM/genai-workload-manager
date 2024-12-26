@@ -66,7 +66,7 @@ def delete(name):
     except Exception as e:
         print(f'Did not inform job manager: {e}')
 
-def scale(name):
+def scale(name=None):
     client = setup_k8s_client()
 
     # 0. Decide which job to scale
