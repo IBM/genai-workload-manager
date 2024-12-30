@@ -53,7 +53,8 @@ def add_job():
         "job_arrival_time": job_arrival_time,
         "last_checkpoint_time": job_arrival_time,  # Initialize to job_arrival_time
         "completed_epochs": 0,
-        "time_bw_checkpoints": None
+        "time_bw_checkpoints": None,
+        "status": "scheduled"
     }
     jobs[job_name] = job
     save_jobs_to_storage()
@@ -87,6 +88,28 @@ def update_last_checkpoint():
     logging.info(f"Updated checkpoint for job: {job_name}")
     return jsonify({"message": "Job updated successfully", "job": job}), 200
 
+
+@app.route('/update_job_status', methods=['PUT'])
+def update_job_status():
+    data = request.json
+    job_name = data.get('job_name')
+    status = data.get('status')
+
+    if not job_name or not status:
+        return jsonify({"error": "job_name and status are required"}), 400
+
+    job = jobs.get(job_name)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    job["status"] = status
+
+    save_jobs_to_storage()
+
+    logging.info(f"Updated status for job: {job_name} as {status}")
+    return jsonify({"message": "Job updated successfully", "job": job}), 200
+
+
 @app.route('/delete_job', methods=['DELETE'])
 def delete_job():
     data = request.json
@@ -114,20 +137,21 @@ def get_job(job_name):
 # API to get all jobs sorted by job_arrival_time (increasing)
 @app.route('/get_jobs_by_arrival', methods=['GET'])
 def get_jobs_by_arrival():
-    sorted_jobs = sorted(jobs.values(), key=lambda x: x["job_arrival_time"])
+    filtered_jobs = [job for job in jobs.values() if job.get("status") != "completed"]
+    sorted_jobs = sorted(filtered_jobs, key=lambda x: x["job_arrival_time"])
     return jsonify(sorted_jobs), 200
 
 # API to get all jobs sorted by last_checkpoint_time (decreasing) where assigned < limit
 @app.route('/get_jobs_by_checkpoint_limit', methods=['GET'])
 def get_jobs_by_checkpoint_limit():
-    filtered_jobs = [job for job in jobs.values() if job["gpu_assigned"] < job["gpu_lim"]]
+    filtered_jobs = [job for job in jobs.values() if job["gpu_assigned"] < job["gpu_lim"] and job.get("status") != "completed"]
     sorted_jobs = sorted(filtered_jobs, key=lambda x: x["last_checkpoint_time"], reverse=True)
     return jsonify(sorted_jobs), 200
 
 # API to get all jobs sorted by last_checkpoint_time (decreasing) where limit - assigned == x
 @app.route('/get_jobs_by_difference/<int:x>', methods=['GET'])
 def get_jobs_by_difference(x):
-    filtered_jobs = [job for job in jobs.values() if job["gpu_lim"] - job["gpu_assigned"] == x]
+    filtered_jobs = [job for job in jobs.values() if job["gpu_lim"] - job["gpu_assigned"] == x and job.get("status") != "completed"]
     sorted_jobs = sorted(filtered_jobs, key=lambda x: x["last_checkpoint_time"], reverse=True)
     return jsonify(sorted_jobs), 200
 
