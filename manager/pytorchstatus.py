@@ -2,6 +2,8 @@ from kubernetes import client, config,watch
 from datetime import date, datetime, time, timedelta
 import time
 import sys
+import requests
+import json
 from manager import scale
 
 def getpytorchjobstatus(interval):
@@ -18,15 +20,18 @@ def getpytorchjobstatus(interval):
     for event in watch.Watch().stream(v1.list_namespaced_event, "fms-tuning", field_selector=field_selector,watch=True):
         print(event['object'].message)
         t_now = datetime.now()
-        if(t_now-t_sent>0):
+        curr_diff = t_now - t_sent
+        if(curr_diff > timedelta(minutes=time_diff)):
                 print("send to workload mgr")
                 print(event['object'].message)
                 jobname = event['object'].involved_object.name
+                jobstatus = {"job_name": jobname, "status": "completed"}
                 headers = {"Content-Type": "application/json"}
                 def_url = "http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/update_job_status"
                 url = sys.argv[2] if len(sys.argv) >= 2 else def_url
-                response = requests.post(url, data=json.dumps(jobname), headers=headers)
+                response = requests.post(url, data=json.dumps(jobstatus), headers=headers)
                 t_sent = t_now
+                time_diff = 1
                 scale()
 #donot send event notification older than `tp` minutes             
 tp = 10
