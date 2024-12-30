@@ -91,7 +91,7 @@ curl -X PUT http://127.0.0.1:5000/update_job_status -H "Content-Type: applicatio
 curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/json" -d '{"job_name": "job_1"}'
 ```
 
-### Get Job by ID
+### Get Job by Job name
 **Endpoint:** `/get_job/<job_name>`  
 **Method:** `GET`
 
