@@ -134,6 +134,11 @@ def get_job(job_name):
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job), 200
 
+# API to get all jobs without any sorting or filtering
+@app.route('/get_all_jobs', methods=['GET'])
+def get_all_jobs():
+    return jsonify(list(jobs.values())), 200
+
 # API to get all jobs sorted by job_arrival_time (increasing)
 @app.route('/get_jobs_by_arrival', methods=['GET'])
 def get_jobs_by_arrival():

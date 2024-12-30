@@ -70,6 +70,17 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 }'
 ```
 
+### Update Last Checkpoint
+**Endpoint:** `/update_job_status`
+**Method:** `PUT`
+
+**Sample Request:**
+```bash
+curl -X PUT http://127.0.0.1:5000/update_job_status -H "Content-Type: application/json" -d '{
+  "job_name": "job_1",
+  "status": "completed"
+}'
+```
 
 ### Delete Job
 **Endpoint:** `/delete_job`  
@@ -80,7 +91,6 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/json" -d '{"job_name": "job_1"}'
 ```
 
-
 ### Get Job by ID
 **Endpoint:** `/get_job/<job_name>`  
 **Method:** `GET`
@@ -90,8 +100,20 @@ curl -X DELETE http://127.0.0.1:5000/delete_job -H "Content-Type: application/js
 curl http://127.0.0.1:5000/get_job/job_1
 ```
 
+### Get All Jobs (Unsorted and Unfiltered)
+**Endpoint:** `/get_all_jobs`  
+**Method:** `GET`
+
+**Sample Request:**
+```bash
+curl http://127.0.0.1:5000/get_all_jobs
+```
+
+**Note:** All the GET APIs listed below return only jobs with a status other than "completed".
+
+
 ### Get All Jobs (Sorted by Arrival Time)
-**Endpoint:** `/get_jobs_by_arrival`  
+**Endpoint:** `/get_jobs_by_arrival`
 **Method:** `GET`
 
 **Sample Request:**

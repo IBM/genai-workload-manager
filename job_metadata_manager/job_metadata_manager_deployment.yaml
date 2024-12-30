@@ -15,6 +15,7 @@ spec:
       containers:
         - name: job-metadata-manager
           image: quay.io/genai-workload-manager/job_metadata_manager
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
