@@ -155,8 +155,15 @@ def deploy_yaml(client, yaml):
         utils.create_from_yaml(client, yaml_objects = [yaml], namespace='fms-tuning')
 
 def kill_job(client, name):
+    from kubernetes.client.rest import ApiException
     customObjectApi = CustomObjectsApi(client)
-    customObjectApi.delete_namespaced_custom_object(group=GROUP, version=VERSION, plural=PLURAL, namespace=NAMESPACE, name=name)
+    try:
+        customObjectApi.delete_namespaced_custom_object(group=GROUP, version=VERSION, plural=PLURAL, namespace=NAMESPACE, name=name)
+    except ApiException as e:
+        if e.status == 404:
+            print("Job not found")
+        else:
+            print("Could not delete: ", e)
 
 def patch_job_resources(client, job_name, allot):
     patch_body = [
