@@ -5,11 +5,14 @@ metadata:
   name: workload-manager
 rules:
 - apiGroups: [""]
-  resources: ["pods", "nodes", "resourcequotas"]
+  resources: ["nodes", "resourcequotas"]
   verbs: ["get", "list"]
 - apiGroups: ["kubeflow.org"]
   resources: ["pytorchjobs"]
-  verbs: ["create", "get", "list", "delete"]
+  verbs: ["create", "get", "list", "delete", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "get", "list", "delete", "patch"]
 - apiGroups: [""]
   resources: ["events"]
   verbs: ["watch"]
