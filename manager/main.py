@@ -17,7 +17,7 @@ def scale(name):
     manager.scale(name)
 
 @main.command()
-@click.option("-n", "--name", help="Name of job to delete", required=True)
+@click.option("-n", "--name", help="Name of job to delete", required=True, multiple=True)
 def delete(name):
     manager.delete(name)
 

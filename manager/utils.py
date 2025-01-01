@@ -221,7 +221,7 @@ def delete_job(job_name):
     if resp.status_code != 200:
         print("Deleting job failed: ", resp.json())
     else:
-        print("Deleted job")
+        print("Deleted job: ", job_name)
 
 def job_to_scale():
     print("Getting jobs by checkpoint limit")

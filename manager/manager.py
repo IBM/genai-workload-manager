@@ -31,12 +31,18 @@ def deploy(filename):
     # 2. Get quota and node free resources
     free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
 
+    if len(sorted_node_info) == 0:
+        print("Insufficient resources for job")
+        return
+
     # 3.1 Check if multi-replica, then call alloc_multi_gpu
     if pod_resource_info["replicas"] != 1:
         alloc_multi_gpu(pod_resource_info, free, sorted_node_info)
 
-    # 3.2 Get allot = min(node, limit, free) 
-    allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
+    # 3.2 Get allot = min(limit, free) 
+    allot = min(pod_resource_info["limit"], free)
+    if allot > max(*filtered_nodes.values()):
+        allot = max(*filtered_nodes.values())
     print(f'Alloted GPUs: {allot}')
 
     # 4.1 Set allot, annotate with request and limit 
@@ -54,17 +60,18 @@ def deploy(filename):
     except Exception as e:
         print(f'Did not inform job manager: {e}')
 
-def delete(name):
+def delete(names):
     client = setup_k8s_client()
 
-    # 1. Delete job
-    kill_job(client, name)
+    for name in names:
+        # 1. Delete job
+        kill_job(client, name)
 
-    # 2. Inform job manager
-    try:
-        delete_job(name)
-    except Exception as e:
-        print(f'Did not inform job manager: {e}')
+        # 2. Inform job manager
+        try:
+            delete_job(name)
+        except Exception as e:
+            print(f'Did not inform job manager: {e}')
 
 def scale(name=None):
     client = setup_k8s_client()
