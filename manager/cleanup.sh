@@ -14,7 +14,7 @@ n_jobs=$((10#$val))
 
 for i in $(seq 1 $n_jobs); do
     dir=$(echo $output_dir$i)
-    rm -rf dir/checkpoint-*
-    rm -rf dir/training_logs.jsonl
+    rm -rf $dir/checkpoint-*
+    rm -rf $dir/training_logs.jsonl
     echo "Cleaning up " $dir
 done
