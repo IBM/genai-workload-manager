@@ -32,10 +32,10 @@ def getpytorchjobstatus(interval=10):
     t_sent = datetime.now() - timedelta(minutes = time_diff)
 
     for event in watch.Watch().stream(v1.list_namespaced_event, "fms-tuning", field_selector=field_selector,watch=True):
-        t_event = print(event['object']['metadata']['creation_timestamp'])
+        t_event = event['object'].metadata.creation_timestamp
         t_now = datetime.now(timezone.utc)
         curr_diff = t_now - t_event
-        print(f'{event['object'].message} with time diff {curr_diff}')
+        print(f"{event['object'].message} with time diff {curr_diff}")
         if(curr_diff < timedelta(minutes=time_diff)):
                 jobname = event['object'].involved_object.name
                 update_job(jobname)
