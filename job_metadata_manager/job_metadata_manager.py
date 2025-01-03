@@ -160,6 +160,14 @@ def get_jobs_by_difference(x):
     sorted_jobs = sorted(filtered_jobs, key=lambda x: x["last_checkpoint_time"], reverse=True)
     return jsonify(sorted_jobs), 200
 
+# API to get all candidate jobs for scale down where assigned - request >= x and sorted by last_checkpoint_time (decreasing)
+@app.route('/get_scale_down_jobs_by_checkpoint/<int:x>', methods=['GET'])
+def get_scale_down_jobs_by_checkpoint(x):
+    filtered_jobs = [job for job in jobs.values() if job["gpu_assigned"] - job["gpu_req"] >= x and job.get("status") != "completed"]
+    sorted_jobs = sorted(filtered_jobs, key=lambda x: x["last_checkpoint_time"], reverse=True)
+    return jsonify(sorted_jobs), 200
+
+
 if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", 5000))
     app.run(host='0.0.0.0', port=port)

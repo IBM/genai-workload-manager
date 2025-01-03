@@ -138,3 +138,12 @@ curl http://127.0.0.1:5000/get_jobs_by_checkpoint_limit
 ```bash
 curl http://127.0.0.1:5000/get_jobs_by_difference/2
 ```
+
+### Get Candidate Jobs for Scale Down (Assigned-Request >= x and Sorted by Checkpoint Time in decreasing order)
+**Endpoint:** `/get_scale_down_jobs_by_checkpoint/<x>`
+**Method:** `GET`
+
+**Sample Request:**
+```bash
+curl http://127.0.0.1:5000/get_scale_down_jobs_by_checkpoint/2
+```
