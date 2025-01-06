@@ -105,7 +105,7 @@ def annotate_yaml(yaml, pod_resource_info):
 def get_resource_stats(request):
     free = get_free_quota()
     sorted_node_info = get_free_per_node()
-    filtered_nodes = {k:v for k,v in sorted_node_info.items() if v > request}
+    filtered_nodes = {k:v for k,v in sorted_node_info.items() if v >= request}
     print(f'Num acceptable nodes: {len(filtered_nodes)}/{len(sorted_node_info)}')
     return free, sorted_node_info, filtered_nodes
 
@@ -161,7 +161,7 @@ def kill_job(client, name):
         customObjectApi.delete_namespaced_custom_object(group=GROUP, version=VERSION, plural=PLURAL, namespace=NAMESPACE, name=name)
     except ApiException as e:
         if e.status == 404:
-            print("Job not found")
+            print(f"Job {name} not found")
         else:
             print("Could not delete: ", e)
 
@@ -219,19 +219,23 @@ def delete_job(job_name):
 
     resp = requests.delete(f'{JOB_MANAGER_ENDPOINT}/delete_job', json=data)
     if resp.status_code != 200:
-        print("Deleting job failed: ", resp.json())
+        print(f"Deleting job {job_name} failed: {resp.json()}")
     else:
         print("Deleted job: ", job_name)
 
-def job_to_scale():
-    print("Getting jobs by checkpoint limit")
-    resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_checkpoint_limit')
+def job_to_scale(up=True,num_gpus=0):
+    if up:
+        print("Getting jobs by checkpoint limit")
+        resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_checkpoint_limit')
 
-    if resp == None or len(resp.json()) == 0:
-        resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_arrival')
-        print("Getting jobs by arrival")
         if resp == None or len(resp.json()) == 0:
-            return None
+            resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_jobs_by_arrival')
+            print("Getting jobs by arrival")
+            if resp == None or len(resp.json()) == 0:
+                return None
 
-    jobs = resp.json()
-    return jobs[0]["job_name"]
+        jobs = resp.json()
+        return jobs[0]["job_name"]
+    else:
+        print("Getting job to scale down")
+        resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_scale_down_jobs_by_checkpoint/{num_gpus}')

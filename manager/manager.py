@@ -21,7 +21,7 @@ def setup_k8s_client():
 def print_yaml(yaml):
     print(yaml)
 
-def deploy(filename):
+def deploy(filename, scale_down=False):
     client = setup_k8s_client()
 
     # 1. Read yaml of pod/job and get request/limit
@@ -31,9 +31,12 @@ def deploy(filename):
     # 2. Get quota and node free resources
     free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
 
-    if len(sorted_node_info) == 0:
+    if len(sorted_node_info) == 0 or free < pod_resource_info["request"]:
         print("Insufficient resources for job")
-        return
+        if scale_down:
+            scale(name=None, up=False, scale_req_gpus=pod_resource_info["request"])
+        else:
+            return
 
     # 3.1 Check if multi-replica, then call alloc_multi_gpu
     if pod_resource_info["replicas"] != 1:
@@ -73,14 +76,14 @@ def delete(names):
         except Exception as e:
             print(f'Did not inform job manager: {e}')
 
-def scale(name=None):
+def scale(name=None, up=True, scale_req_gpus=0):
     client = setup_k8s_client()
 
     # 0. Decide which job to scale
-    job_name = name if name is not None else job_to_scale()
+    job_name = name if name is not None else job_to_scale(up=True, num_gpus=scale_req_gpus)
     if job_name == None:
         print("No jobs to scale")
-        return
+        return 0
     
     print(f'Scaling pytorchjob: {job_name}')
 
@@ -107,8 +110,14 @@ def scale(name=None):
     # 3.1 TODO: Add multi-gpu later
 
     # 3.2 Allot new gpus
-    allot = min(*filtered_nodes.values(), pod_resource_info["limit"], free)
-    print(f'New allotment: {allot}')
+    allot = min(pod_resource_info["limit"], free)
+    if up:
+        if allot > max(*filtered_nodes.values()):
+            allot = max(*filtered_nodes.values())
+        print(f'New allotment: {allot}')
+    else:
+        # In case of scale down, allot the minimum requested gpus
+        allot = min(pod_resource_info["request"], free)
 
     if allot != assigned_gpus:
         # 4.1 Edit resource, limit and command and deploy
@@ -124,6 +133,8 @@ def scale(name=None):
             kill_pod(client, pod_name)
     else:
         print("No changes to resource, doing nothing...")
+
+    return 1
 
 def alloc_multi_gpu(pod_resource_info, curr_quota, sorted_node_info):
     num_replica, req_gpu, limit_gpu = pod_resource_info["replicas"], pod_resource_info["request"], pod_resource_info["limit"]
