@@ -7,7 +7,7 @@ spec:
   pytorchReplicaSpecs:
     Master:
       replicas: 1
-      restartPolicy: Never
+      restartPolicy: OnFailure
       template:
         spec:
           affinity:
