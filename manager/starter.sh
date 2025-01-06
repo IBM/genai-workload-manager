@@ -11,3 +11,7 @@ cp ../monitoring/sample_json/outputj3.json ../monitoring/sample_json/output.json
 ./main.py deploy -f yamls/demo-job3.yaml
 #for scale up
 cp ../monitoring/sample_json/outputsup.json ../monitoring/sample_json/output.json
+#for scale down
+sleep $3
+cp ../monitoring/sample_json/outputsdown.json ../monitoring/sample_json/output.json
+./main.py deploy -f yamls/demo-job4.yaml
