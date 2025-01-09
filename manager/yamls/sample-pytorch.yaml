@@ -91,7 +91,7 @@ spec:
           volumes:
           - name: cos1
             persistentVolumeClaim:
-              claimName: my-training-cos-pvc1
+              claimName: my-training-cos-pvc-test1
           - name: aim
             persistentVolumeClaim:
               claimName: aim-for-ai-platform-experiments-pvc

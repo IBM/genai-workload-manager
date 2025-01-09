@@ -40,3 +40,10 @@ If atleast 2/3 GPUs are available, then the script will patch the pytorch yaml a
 ```
 curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_jobs_by_checkpoint_limit
 ```
+
+## Deleting jobs
+```
+./main.py delete -n genai-job1 -n genai-job2 -n genai-job3
+```
+
+curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_all_jobs
