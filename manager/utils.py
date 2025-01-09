@@ -239,3 +239,5 @@ def job_to_scale(up=True,num_gpus=0):
     else:
         print("Getting job to scale down")
         resp = requests.get(f'{JOB_MANAGER_ENDPOINT}/get_scale_down_jobs_by_checkpoint/{num_gpus}')
+        jobs = resp.json()
+        return jobs[0]["job_name"]

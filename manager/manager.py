@@ -21,7 +21,7 @@ def setup_k8s_client():
 def print_yaml(yaml):
     print(yaml)
 
-def deploy(filename, scale_down=False):
+def deploy(filename):
     client = setup_k8s_client()
 
     # 1. Read yaml of pod/job and get request/limit
@@ -31,12 +31,15 @@ def deploy(filename, scale_down=False):
     # 2. Get quota and node free resources
     free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
 
-    if len(sorted_node_info) == 0 or free < pod_resource_info["request"]:
-        print("Insufficient resources for job")
-        if scale_down:
-            scale(name=None, up=False, scale_req_gpus=pod_resource_info["request"])
-        else:
+    if len(filtered_nodes) == 0 or free < pod_resource_info["request"]:
+        print("Insufficient resources for job: will attempt to scale down")
+        if not scale(name=None, up=False, scale_req_gpus=pod_resource_info["request"]):
+            print("Unable to find resources by scaling")
             return
+        else:
+            import time
+            time.sleep(35) # Wait for changes to reflect
+            free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
 
     # 3.1 Check if multi-replica, then call alloc_multi_gpu
     if pod_resource_info["replicas"] != 1:
@@ -44,8 +47,8 @@ def deploy(filename, scale_down=False):
 
     # 3.2 Get allot = min(limit, free) 
     allot = min(pod_resource_info["limit"], free)
-    if allot > max(*filtered_nodes.values()):
-        allot = max(*filtered_nodes.values())
+    if allot > max(filtered_nodes.values()):
+        allot = max(filtered_nodes.values())
     print(f'Alloted GPUs: {allot}')
 
     # 4.1 Set allot, annotate with request and limit 
@@ -80,7 +83,7 @@ def scale(name=None, up=True, scale_req_gpus=0):
     client = setup_k8s_client()
 
     # 0. Decide which job to scale
-    job_name = name if name is not None else job_to_scale(up=True, num_gpus=scale_req_gpus)
+    job_name = name if name is not None else job_to_scale(up=up, num_gpus=scale_req_gpus)
     if job_name == None:
         print("No jobs to scale")
         return 0
@@ -104,20 +107,18 @@ def scale(name=None, up=True, scale_req_gpus=0):
         pod = podlist.items[0]
 
         # 2.2 Count current assignment as free
-        free += assigned_gpus
-        #node_name = pod['node_name']
+        if up:
+            free += assigned_gpus
+            #node_name = pod['node_name']
 
     # 3.1 TODO: Add multi-gpu later
 
     # 3.2 Allot new gpus
     allot = min(pod_resource_info["limit"], free)
-    if up:
-        if allot > max(*filtered_nodes.values()):
-            allot = max(*filtered_nodes.values())
-        print(f'New allotment: {allot}')
-    else:
-        # In case of scale down, allot the minimum requested gpus
-        allot = min(pod_resource_info["request"], free)
+    if allot > max(filtered_nodes.values()):
+        allot = max(filtered_nodes.values())
+
+    print(f'New allotment: {allot}')
 
     if allot != assigned_gpus:
         # 4.1 Edit resource, limit and command and deploy
