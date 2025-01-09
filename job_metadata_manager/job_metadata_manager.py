@@ -110,6 +110,26 @@ def update_job_status():
     return jsonify({"message": "Job updated successfully", "job": job}), 200
 
 
+@app.route('/update_job', methods=['PUT'])
+def update_job():
+    data = request.json
+    job_name = data.get('job_name')
+
+    if not job_name:
+        return jsonify({"error": "job_name is required"}), 400
+
+    job = jobs.get(job_name)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    job.update(data)
+
+    save_jobs_to_storage()
+
+    logging.info(f"Updated job: {job_name}")
+    return jsonify({"message": "Job updated successfully", "job": job}), 200
+
+
 @app.route('/delete_job', methods=['DELETE'])
 def delete_job():
     data = request.json
