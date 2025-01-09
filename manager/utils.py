@@ -218,8 +218,10 @@ def update_job(job_name, allot):
         "gpu_assigned": allot,
     }
     resp = requests.put(f'{JOB_MANAGER_ENDPOINT}/update_job', json=data)
-    if resp.status_code != 201:
+    if resp.status_code != 200:
         print("Updating job failed: ", resp.json())
+    else:
+        print(resp.json())
 
 def delete_job(job_name):
     data = {
