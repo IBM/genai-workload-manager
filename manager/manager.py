@@ -138,6 +138,7 @@ def scale(name=None, up=True, scale_req_gpus=0):
         old_command = get_nested_value(yaml, 'spec.pytorchReplicaSpecs.Master.template.spec.containers.0.command')
         new_command = [ x.replace(f'--num_processes={assigned_gpus}', f'--num_processes={allot}') for x in old_command]
         patch_job_command(client, job_name, new_command)
+        update_job(job_name, allot)
 
         # 4.2 Delete pod to respawn automatically
         if len(podlist.items) != 0:

@@ -212,6 +212,15 @@ def add_job(job_name, pod_resource_info, allot):
     else:
         print("Added job info")
 
+def update_job(job_name, allot):
+    data = {
+        "job_name": job_name,
+        "gpu_assigned": allot,
+    }
+    resp = requests.put(f'{JOB_MANAGER_ENDPOINT}/update_job', json=data)
+    if resp.status_code != 201:
+        print("Updating job failed: ", resp.json())
+
 def delete_job(job_name):
     data = {
         "job_name": job_name
