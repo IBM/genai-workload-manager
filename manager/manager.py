@@ -38,8 +38,12 @@ def deploy(filename):
             return
         else:
             import time
-            time.sleep(35) # Wait for changes to reflect
-            free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
+            for i in range(5):
+                time.sleep(45) # Wait for changes to reflect
+                free, sorted_node_info, filtered_nodes = get_resource_stats(pod_resource_info["request"])
+                if len(filtered_nodes) != 0:
+                    break
+                # Else, retry
 
     # 3.1 Check if multi-replica, then call alloc_multi_gpu
     if pod_resource_info["replicas"] != 1:
@@ -107,9 +111,16 @@ def scale(name=None, up=True, scale_req_gpus=0):
         pod = podlist.items[0]
 
         # 2.2 Count current assignment as free
-        if up:
-            free += assigned_gpus
-            #node_name = pod['node_name']
+        free += assigned_gpus
+        node_name = pod.spec.node_name
+        if node_name in filtered_nodes:
+            filtered_nodes[node_name] += assigned_gpus
+        else:
+            filtered_nodes[node_name] = assigned_gpus
+        if not up:
+            filtered_nodes = dict(sorted(filtered_nodes.items(), key=lambda item: item[1], reverse=True))
+            highest = list(filtered_nodes.keys())[0]
+            filtered_nodes[highest] -= scale_req_gpus
 
     # 3.1 TODO: Add multi-gpu later
 
