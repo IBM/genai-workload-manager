@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(mess
 
 COMPLETED_STATUS = "completed"
 #threshold value is in seconds
-NEXT_CHECKPOINT_THRESHOLD = os.environ.get("NEXT_CHECKPOINT_THRESHOLD", 60)
+NEXT_CHECKPOINT_THRESHOLD = int(os.environ.get("NEXT_CHECKPOINT_THRESHOLD", "60"))
 #TODO: put default after checking with Kavya
 MANAGER_API_URL = os.environ.get("MANAGER_API_URL")
 

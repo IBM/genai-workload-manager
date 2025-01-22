@@ -22,7 +22,7 @@ spec:
             - name: FLASK_PORT
               value: "5000"
             - name: NEXT_CHECKPOINT_THRESHOLD
-              value: 60
+              value: "60"
             - name: MANAGER_API_URL
               value: "http://"
           volumeMounts:
