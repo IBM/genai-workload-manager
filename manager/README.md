@@ -47,3 +47,10 @@ curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_j
 ```
 
 curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_all_jobs
+
+
+## API server
+Run as 
+```
+fastapi run main.py
+```

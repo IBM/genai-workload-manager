@@ -95,7 +95,11 @@ def scale(name=None, up=True, scale_req_gpus=0):
     print(f'Scaling pytorchjob: {job_name}')
 
     # 1.1 Use annotations to get job request/limit
-    yaml, pod_resource_info = get_info_from_annotations(client, job_name)
+    try:
+        yaml, pod_resource_info = get_info_from_annotations(client, job_name)
+    except Exception as e:
+        print("No such job exists")
+        return 0
 
     # 1.2 Get GPU assignment of this job from yaml
     _, assn = parse_yaml(yaml)
