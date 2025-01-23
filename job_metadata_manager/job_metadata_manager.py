@@ -146,6 +146,7 @@ def find_job_to_scale_up():
     selected_job = sorted_jobs[0]["job_name"] if sorted_jobs else None
     if selected_job == None:
         logging.error("No job available to be scaled up")
+    logging.info(f"Job {selected_job}: selected for scale up")
     return selected_job
    
 @app.route('/update_job_status', methods=['PUT'])
@@ -173,6 +174,7 @@ def update_job_status():
         job_to_scale_up = find_job_to_scale_up()
         # 2. Add the job to the queue of jobs to be scaled up
         job_scale_up_q.append(job_to_scale_up)
+        logging.info(f"Job {job_to_scale_up}: added to the queue of jobs to scale up")
         # 3. Save the queue to storage to handle failures
         save_jobs_to_scale_up_to_storage()
 
