@@ -43,7 +43,7 @@ curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_j
 
 ## Deleting jobs
 ```
-./main.py delete -n genai-job1 -n genai-job2 -n genai-job3
+./main.py delete -n genai-job1 -n genai-job2 -n genai-job3 -n genai-job4
 ```
 
 curl http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/get_all_jobs
