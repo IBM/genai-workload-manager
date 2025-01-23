@@ -23,9 +23,9 @@ def deploy(filename):
 def scale(name):
     manager.scale(name)
 
-@app.post('/scale')
-def scaleAPI(job:Job):
-    if not manager.scale(job.name):
+@app.post('/scale/{name}')
+def scaleAPI(name: str):
+    if not manager.scale(name):
         return "Did not scale", 401
     else:
         return "Scaled", 200
