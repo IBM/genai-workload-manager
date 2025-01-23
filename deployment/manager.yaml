@@ -44,6 +44,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: genai-workload-manager
+  labels:
+    app: genai-workload-manager
 spec:
   serviceAccountName: workload-manager-sa
   containers:
@@ -85,4 +87,17 @@ spec:
     - name: cos1
       persistentVolumeClaim:
         claimName: my-training-cos-pvc-test1
+
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: genai-workload-manager-service
+spec:
+  selector:
+    app: genai-workload-manager
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
