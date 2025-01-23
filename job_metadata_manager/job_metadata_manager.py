@@ -90,7 +90,7 @@ def update_last_checkpoint():
     completed_epochs = data.get('completed_epochs')
     total_epochs = data.get('total_epochs')
 
-    if not job_name or last_checkpoint_time is None or completed_epochs is None or total_epochs in None:
+    if not job_name or last_checkpoint_time is None or completed_epochs is None or total_epochs is None:
         return jsonify({"error": "job_name, last_checkpoint_time, completed_epochs and total_epochs are required"}), 400
 
     job = jobs.get(job_name)
