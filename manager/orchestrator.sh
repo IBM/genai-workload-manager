@@ -1,3 +1,5 @@
+python3 pytorchstatus.py &
+fastapi run main.py &
 echo "Starting 1st Job"
 cp ../monitoring/sample_json/outputj1.json ../monitoring/sample_json/output.json
 ./main.py deploy -f yamls/demo-job1.yaml

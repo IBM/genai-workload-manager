@@ -39,8 +39,8 @@ def getpytorchjobstatus(interval=10):
         if(curr_diff < timedelta(minutes=time_diff)):
                 jobname = event['object'].involved_object.name
                 update_job(jobname)
-                print("Calling scale")
-                scale()
+                #print("Calling scale")
+                #scale()
         else:
             print("Event too old, not calling manager")
 
