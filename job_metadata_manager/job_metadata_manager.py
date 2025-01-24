@@ -173,10 +173,12 @@ def update_job_status():
         # 1. Find a job to scale up
         job_to_scale_up = find_job_to_scale_up()
         # 2. Add the job to the queue of jobs to be scaled up
-        job_scale_up_q.append(job_to_scale_up)
-        logging.info(f"Job {job_to_scale_up}: added to the queue of jobs to scale up")
-        # 3. Save the queue to storage to handle failures
-        save_jobs_to_scale_up_to_storage()
+        if job_to_scale_up != None:
+            job_scale_up_q.append(job_to_scale_up)
+            logging.info(f"Job {job_to_scale_up}: added to the queue of jobs to scale up")
+            
+            # 3. Save the queue to storage to handle failures
+            save_jobs_to_scale_up_to_storage()
 
     return jsonify({"message": "Job updated successfully", "job": job}), 200
 
