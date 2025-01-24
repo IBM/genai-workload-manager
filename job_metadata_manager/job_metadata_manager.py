@@ -132,7 +132,7 @@ def find_job_to_scale_up():
 
     # 2. Select only jobs where next checkpoint is within a threshold
     now = int(datetime.utcnow().timestamp())
-    checkpoint_filtered_jobs = [job for job in eligible_jobs.values() if job["completed_epochs"] == 0 or now <= (job["last_checkpoint_time"] + job["time_bw_checkpoints"]) <= now + NEXT_CHECKPOINT_THRESHOLD] 
+    checkpoint_filtered_jobs = [job for job in eligible_jobs if job["completed_epochs"] == 0 or now <= (job["last_checkpoint_time"] + job["time_bw_checkpoints"]) <= now + NEXT_CHECKPOINT_THRESHOLD] 
 
     # 3. Sort the jobs by percentage of epochs completed i.e completed_epochs / total_epochs, with total_epochs=0 at the end
     sorted_jobs = sorted(
