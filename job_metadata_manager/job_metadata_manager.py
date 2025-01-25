@@ -110,7 +110,7 @@ def update_last_checkpoint():
     logging.info(f"Updated checkpoint for job: {job_name}")
 
     # 1: If this job is waiting to be scaled up, call the manager API
-    if not job_scale_up_q.is_empty() and job_scale_up_q[0] == job_name:
+    if len(job_scale_up_q) > 0 and job_scale_up_q[0] == job_name:
         # Send a request to the manager API to scale up the job
         try:
             response = requests.post(f"{MANAGER_API_URL}/{job_name}")
@@ -170,6 +170,10 @@ def update_job_status():
 
     # We might have an opportunity to scale up, let us find a candidate job for scale up
     if status == COMPLETED_STATUS:
+        # 0. Remove this job from the scale up queue
+        if job_name in job_scale_up_q:
+            job_scale_up_q.remove(job_name)
+
         # 1. Find a job to scale up
         job_to_scale_up = find_job_to_scale_up()
         # 2. Add the job to the queue of jobs to be scaled up
