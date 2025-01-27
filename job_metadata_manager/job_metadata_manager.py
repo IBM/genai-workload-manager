@@ -5,6 +5,7 @@ import json
 import logging
 from collections import deque
 import pickle
+import requests
 
 
 app = Flask(__name__)
@@ -131,12 +132,13 @@ def find_job_to_scale_up():
     eligible_jobs = [job for job in jobs.values() if job["gpu_assigned"] < job["gpu_lim"] and job["status"] != COMPLETED_STATUS and job["job_name"] not in job_scale_up_q]
 
     # 2. Select only jobs where next checkpoint is within a threshold
-    now = int(datetime.utcnow().timestamp())
-    checkpoint_filtered_jobs = [job for job in eligible_jobs if job["completed_epochs"] == 0 or now <= (job["last_checkpoint_time"] + job["time_bw_checkpoints"]) <= now + NEXT_CHECKPOINT_THRESHOLD] 
+    #now = int(datetime.utcnow().timestamp())
+    #checkpoint_filtered_jobs = [job for job in eligible_jobs if job["completed_epochs"] == 0 or now <= (job["last_checkpoint_time"] + job["time_bw_checkpoints"]) <= now + NEXT_CHECKPOINT_THRESHOLD] 
 
     # 3. Sort the jobs by percentage of epochs completed i.e completed_epochs / total_epochs, with total_epochs=0 at the end
     sorted_jobs = sorted(
-        checkpoint_filtered_jobs,
+        eligible_jobs,
+        #checkpoint_filtered_jobs,
         key=lambda job: job["completed_epochs"] / job["total_epochs"]
         if job["total_epochs"] > 0 else float('-inf'),
         reverse=True
@@ -173,6 +175,7 @@ def update_job_status():
         # 0. Remove this job from the scale up queue
         if job_name in job_scale_up_q:
             job_scale_up_q.remove(job_name)
+            save_jobs_to_scale_up_to_storage()
 
         # 1. Find a job to scale up
         job_to_scale_up = find_job_to_scale_up()
@@ -220,6 +223,10 @@ def delete_job():
         return jsonify({"error": "Job not found"}), 404
 
     save_jobs_to_storage()
+
+    if job_name in job_scale_up_q:
+        job_scale_up_q.remove(job_name)
+        save_jobs_to_scale_up_to_storage()
 
     logging.info(f"Deleted job: {job_name}")
     return jsonify({"message": "Job deleted successfully"}), 200
