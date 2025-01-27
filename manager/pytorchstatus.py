@@ -1,4 +1,5 @@
 from kubernetes import client, config,watch
+from kubernetes.client.exceptions import ApiException
 from datetime import date, datetime, time, timedelta, timezone
 import time
 import sys
@@ -23,27 +24,38 @@ def update_job(jobname):
         else:
             print("Updated job status")
 
-def getpytorchjobstatus(interval=10):
+def getpytorchjobstatus(interval=10,resource_version=None):
     load_config()
     v1 = client.CoreV1Api()
     field_selector='reason=PyTorchJobSucceeded'
 
     time_diff=int(sys.argv[1]) if len(sys.argv) > 1 else interval
     t_sent = datetime.now() - timedelta(minutes = time_diff)
+    try:
+        for event in watch.Watch().stream(v1.list_namespaced_event, "fms-tuning", field_selector=field_selector,watch=True):
+            t_event = event['object'].metadata.creation_timestamp
+            t_now = datetime.now(timezone.utc)
+            curr_diff = t_now - t_event
+            last_resource_version = event['object'].metadata.resource_version
+            print(f"{event['object'].message} with time diff {curr_diff}")
+            if(curr_diff < timedelta(minutes=time_diff)):
+                    jobname = event['object'].involved_object.name
+                    update_job(jobname)
+                    print("Calling scale")
+                    scale()
+            else:
+                    print("Event too old, not calling manager")
+    except ApiException as e: 
+      if e.status == 410: # Resource too old
+         return getpytorchjobstatus(resource_version=None)
+      else:
+         raise
+    return last_resource_version
+tp = 10
+last_resource_version = getpytorchjobstatus(tp) # creates a watch for 2 seconds only, returns the last known resource version 
 
-    for event in watch.Watch().stream(v1.list_namespaced_event, "fms-tuning", field_selector=field_selector,watch=True):
-        t_event = event['object'].metadata.creation_timestamp
-        t_now = datetime.now(timezone.utc)
-        curr_diff = t_now - t_event
-        print(f"{event['object'].message} with time diff {curr_diff}")
-        if(curr_diff < timedelta(minutes=time_diff)):
-                jobname = event['object'].involved_object.name
-                update_job(jobname)
-                #print("Calling scale")
-                #scale()
-        else:
-            print("Event too old, not calling manager")
+print('last_resource_version', last_resource_version)
 
 #donot send event notification older than `tp` minutes             
-tp = 10
-getpytorchjobstatus(tp)
+getpytorchjobstatus(tp,last_resource_version)# we try to resume from last know resource version, if that fails it will resume from resource version None
+
