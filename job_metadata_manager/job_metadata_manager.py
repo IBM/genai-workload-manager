@@ -38,12 +38,13 @@ job_scale_up_q = deque()
 JOBS_TO_SCALE_UP_FILE = '/data/seep/jobs_to_scale_up'
 #JOBS_TO_SCALE_UP_FILE = './jobs_to_scale_up'
 def save_jobs_to_scale_up_to_storage():
-    with open(JOBS_TO_SCALE_UP_FILE, "wb") as f:
-        pickle.dump(list(job_scale_up_q), f)
+    return
+    #with open(JOBS_TO_SCALE_UP_FILE, "wb") as f:
+    #    pickle.dump(list(job_scale_up_q), f)
 
-if os.path.exists(JOBS_TO_SCALE_UP_FILE) and os.path.getsize(JOBS_TO_SCALE_UP_FILE) > 0:
-    with open(JOBS_TO_SCALE_UP_FILE, "rb") as f:
-        job_scale_up_q = pickle.load(f)
+#if os.path.exists(JOBS_TO_SCALE_UP_FILE) and os.path.getsize(JOBS_TO_SCALE_UP_FILE) > 0:
+#    with open(JOBS_TO_SCALE_UP_FILE, "rb") as f:
+#        job_scale_up_q = pickle.load(f)
 
 @app.route('/add_job', methods=['POST'])
 def add_job():
@@ -186,7 +187,7 @@ def update_job_status():
             
             # 3. Save the queue to storage to handle failures
             save_jobs_to_scale_up_to_storage()
-
+    
     return jsonify({"message": "Job updated successfully", "job": job}), 200
 
 
