@@ -141,8 +141,7 @@ def find_job_to_scale_up():
         eligible_jobs,
         #checkpoint_filtered_jobs,
         key=lambda job: job["completed_epochs"] / job["total_epochs"]
-        if job["total_epochs"] > 0 else float('-inf'),
-        reverse=True
+        if job["total_epochs"] > 0 else float('inf')
     )
 
     # 4. Return the job at the top of the list
