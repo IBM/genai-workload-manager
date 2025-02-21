@@ -33,20 +33,20 @@ spec:
               --fsdp_forward_prefetch=false --fsdp_offload_params=false --fsdp_sharding_strategy=FULL_SHARD
               --fsdp_state_dict_type=FULL_STATE_DICT --fsdp_cpu_ram_efficient_loading=true
               --fsdp_sync_module_states=true --rdzv_backend=static --same_network
-              --num_processes=1 --num_machines=${WORLD_SIZE} --mixed_precision=no
+              --num_processes=${NGPU} --num_machines=${WORLD_SIZE} --mixed_precision=no
               --dynamo_backend=no --machine_rank=${RANK} --main_process_ip=${MASTER_ADDR}
               --main_process_port=${MASTER_PORT} -m tuning.sft_trainer \naccelerate
               launch  --use_fsdp --fsdp_auto_wrap_policy=TRANSFORMER_BASED_WRAP --fsdp_forward_prefetch=false
               --fsdp_offload_params=false --fsdp_sharding_strategy=FULL_SHARD --fsdp_state_dict_type=FULL_STATE_DICT
               --fsdp_cpu_ram_efficient_loading=true --fsdp_sync_module_states=true
-              --rdzv_backend=static --same_network --num_processes=1 --num_machines=${WORLD_SIZE}
+              --rdzv_backend=static --same_network --num_processes=${NGPU} --num_machines=${WORLD_SIZE}
               --mixed_precision=no --dynamo_backend=no --machine_rank=${RANK} --main_process_ip=${MASTER_ADDR}
               --main_process_port=${MASTER_PORT} -m tuning.sft_trainer
               --model_name_or_path bigscience/bloom-560m
               --training_data_path /cos1/seep/tiny_llama/input.json
               --output_dir /cos1/output/sg/fine-tuned-tiny-llama-new2
               --packing false
-              --response_template '\n### Label:'
+              --response_template '\n### Response:'
               --dataset_text_field output
               --num_train_epochs 3.0
               --max_seq_length 4096
@@ -67,6 +67,8 @@ spec:
               value: /home/tuning/.local/bin:/home/tuning/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
             - name: HOME
               value: /home/tuning
+            - name: NGPU
+              value: "3"
             - name: HF_HOME
               value: /hfcache/.cache/huggingface
             - name: GIT_SSH_COMMAND
