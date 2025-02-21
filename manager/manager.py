@@ -136,12 +136,14 @@ def scale(name=None, up=True, scale_req_gpus=0):
     print(f'New allotment: {allot}')
 
     if allot != assigned_gpus:
-        # 4.1 Edit resource, limit and command and deploy
+        # 4.1 Edit resource, limit and env and deploy
         print("Patching object with new resource allotment")
         yaml = patch_job_resources(client, job_name, allot)
-        old_command = get_nested_value(yaml, 'spec.pytorchReplicaSpecs.Master.template.spec.containers.0.command')
-        new_command = [ x.replace(f'--num_processes={assigned_gpus}', f'--num_processes={allot}') for x in old_command]
-        patch_job_command(client, job_name, new_command)
+        env = get_nested_value(yaml, 'spec.pytorchReplicaSpecs.Master.template.spec.containers.0.env')
+        for i, env_item in enumerate(env):
+            if env_item['name'] == 'NGPU':
+                env[i]['value'] = str(allot)
+        patch_env(client, job_name, env)
         update_job(job_name, allot)
 
         # 4.2 Delete pod to respawn automatically

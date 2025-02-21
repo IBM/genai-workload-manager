@@ -83,7 +83,7 @@ def set_yaml(yaml, allot):
         if 'Worker' in yaml['spec']['pytorchReplicaSpecs']:
             typ = 'Worker'
         for res in ['requests', 'limits']:
-            yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['resources'][res][gpu] = allot
+           yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['resources'][res][gpu] = allot
         for i, _ in enumerate(yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['env']):
             if yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['env'][i]['name'] == 'NGPU':
                 yaml['spec']['pytorchReplicaSpecs'][typ]['template']['spec']['containers'][0]['env'][i]['value'] = str(allot)
@@ -170,6 +170,10 @@ def patch_job_resources(client, job_name, allot):
         {"op": "replace", "path": "/spec/pytorchReplicaSpecs/Master/template/spec/containers/0/resources/requests/nvidia.com~1gpu", "value": allot},
         {"op": "replace", "path": "/spec/pytorchReplicaSpecs/Master/template/spec/containers/0/resources/limits/nvidia.com~1gpu", "value": allot},
     ]
+    return patch_job(client, job_name, patch_body)
+
+def patch_env(client, job_name, env):
+    patch_body = [{"op": "replace", "path": "/spec/pytorchReplicaSpecs/Master/template/spec/containers/0/env", "value": env}]
     return patch_job(client, job_name, patch_body)
 
 def patch_job_command(client, job_name, command):
