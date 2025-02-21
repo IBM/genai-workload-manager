@@ -19,6 +19,7 @@ def update_job(jobname):
         def_url = "http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/update_job_status"
         url = sys.argv[2] if len(sys.argv) >= 2 else def_url
         resp = requests.put(url, json=jobstatus, headers=headers)
+        return resp.status_code, resp.json()
         if resp.status_code != 200:
             print("Updating job status failed: ", resp.json())
         else:
@@ -37,12 +38,13 @@ def getpytorchjobstatus(interval=10,resource_version=None):
             t_now = datetime.now(timezone.utc)
             curr_diff = t_now - t_event
             last_resource_version = event['object'].metadata.resource_version
-            print(f"{event['object'].message} with time diff {curr_diff}")
             if(curr_diff < timedelta(minutes=time_diff)):
                     jobname = event['object'].involved_object.name
-                    update_job(jobname)
-                    print("Calling scale")
-                    scale()
+                    code, msg = update_job(jobname)
+                    if code == 200:
+                        print("Updated job status")
+                        print(f"{event['object'].message} with time diff {curr_diff}")
+                        #scale()
             else:
                     print("Event too old, not calling manager")
     except ApiException as e: 
