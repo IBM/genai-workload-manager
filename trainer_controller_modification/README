@@ -1,0 +1,4 @@
+path to b added to in `fms-hf-tuning`:
+- `tuning/trainercontroller/operations/notifier.py`
+- `examples/trainercontroller_configs/notifier.yaml`
+
