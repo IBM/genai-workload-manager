@@ -7,5 +7,7 @@ The Version 1 is implemented on top of kubernetes and has the following features
 - Optimizes Job Makespan
 - Supports Job Scaling 
 
+[MPV2 branch](https://github.com/IBM/genai-workload-manager/tree/mvp2) does scaling after checkpoints are finished instead of killing jobs immediately (which results in wasted work).
+
 ![Architecture diagram](./images/mvp1.png)
 
