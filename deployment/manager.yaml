@@ -54,8 +54,7 @@ spec:
         - sh
         - -c
         - |
-          #tail -f /dev/null
-          GIT_SSH_COMMAND='ssh -i /root/.ssh/ssh-privatekey -o IdentitiesOnly=yes -o StrictHostKeyChecking=no' git clone git@github.ibm.com:ai-platform-engg-irl/genai-workload-manager.git
+          git clone git@github.com:IBM/genai-workload-manager.git 
           cd genai-workload-manager/monitoring && cp /root/.ssh/prometheus ./secret.json && pip install -r requirements.txt && MHOST='0.0.0.0' MPORT=6000 python3 demomonitor.py
       resources:
         requests:
