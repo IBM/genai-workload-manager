@@ -5,12 +5,14 @@ This is a Flask-based Python application for managing job metadata. It provides 
 
 ---
 
-## Setup Instructions
+## Local Setup Instructions
+
+To deploy on K8s, use the [yaml](../deployment/job_metadata_manager.yaml). To run locally for testing etc. follow the below instructions.
 
 ### 1. Clone the Repository
 
 ```bash
-git clone git@github.ibm.com:ai-platform-engg-irl/genai-workload-manager.git
+git clone git@github.com:IBM/genai-workload-manager.git
 cd job_metadata_manager
 ```
 
