@@ -54,7 +54,8 @@ def add_job():
         "last_checkpoint_time": job_arrival_time,  # Initialize to job_arrival_time
         "completed_epochs": 0,
         "time_bw_checkpoints": None,
-        "status": "scheduled"
+        "status": "scheduled",
+        "restarts": 0
     }
     jobs[job_name] = job
     save_jobs_to_storage()
@@ -107,6 +108,25 @@ def update_job_status():
     save_jobs_to_storage()
 
     logging.info(f"Updated status for job: {job_name} as {status}")
+    return jsonify({"message": "Job updated successfully", "job": job}), 200
+
+@app.route('/increment_restarts', methods=['PUT'])
+def increment_restarts():
+    data = request.json
+    job_name = data.get('job_name')
+
+    if not job_name:
+        return jsonify({"error": "job_name is required"}), 400
+
+    job = jobs.get(job_name)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    job["restarts"] = job.get("restarts", 0) + 1
+
+    save_jobs_to_storage()
+
+    logging.info(f"Updated restarts for job: {job_name} as {job['restarts']}")
     return jsonify({"message": "Job updated successfully", "job": job}), 200
 
 

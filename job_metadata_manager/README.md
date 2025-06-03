@@ -58,7 +58,6 @@ curl -X POST http://127.0.0.1:5000/add_job -H "Content-Type: application/json" -
 }'
 ```
 
-
 ### Update Last Checkpoint
 **Endpoint:** `/update_last_checkpoint`  
 **Method:** `PUT`
@@ -72,7 +71,7 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 }'
 ```
 
-### Update Last Checkpoint
+### Update Job Status
 **Endpoint:** `/update_job_status`
 **Method:** `PUT`
 
@@ -81,6 +80,17 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 curl -X PUT http://127.0.0.1:5000/update_job_status -H "Content-Type: application/json" -d '{
   "job_name": "job_1",
   "status": "completed"
+}'
+```
+
+### Increment Restarts
+**Endpoint:** `/increment_restarts`
+**Method:** `PUT`
+
+**Sample Request:**
+```bash
+curl -X PUT http://127.0.0.1:5000/increment_restarts -H "Content-Type: application/json" -d '{
+  "job_name": "job_1"
 }'
 ```
 
