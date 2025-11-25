@@ -1,0 +1,15 @@
+controller_metrics:
+  - name: trainer_state
+    class: TrainingState
+operations:
+  - name: notifier
+    class: Notifier
+    arguments:
+      url: http://job-metadata-manager-service.fms-tuning.svc.cluster.local:5000/update_last_checkpoint 
+controllers:
+  - name: ctrl-on-save-format
+    triggers:
+      - on_save
+    rule: 'True'
+    operations:
+      - notifier.should_notify

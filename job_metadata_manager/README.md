@@ -5,12 +5,14 @@ This is a Flask-based Python application for managing job metadata. It provides 
 
 ---
 
-## Setup Instructions
+## Local Setup Instructions
+
+To deploy on K8s, use the [yaml](../deployment/job_metadata_manager.yaml). To run locally for testing etc. follow the below instructions.
 
 ### 1. Clone the Repository
 
 ```bash
-git clone git@github.ibm.com:ai-platform-engg-irl/genai-workload-manager.git
+git clone git@github.com:IBM/genai-workload-manager.git
 cd job_metadata_manager
 ```
 
@@ -56,7 +58,6 @@ curl -X POST http://127.0.0.1:5000/add_job -H "Content-Type: application/json" -
 }'
 ```
 
-
 ### Update Last Checkpoint
 **Endpoint:** `/update_last_checkpoint`  
 **Method:** `PUT`
@@ -70,7 +71,7 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 }'
 ```
 
-### Update Last Checkpoint
+### Update Job Status
 **Endpoint:** `/update_job_status`
 **Method:** `PUT`
 
@@ -79,6 +80,17 @@ curl -X PUT http://127.0.0.1:5000/update_last_checkpoint -H "Content-Type: appli
 curl -X PUT http://127.0.0.1:5000/update_job_status -H "Content-Type: application/json" -d '{
   "job_name": "job_1",
   "status": "completed"
+}'
+```
+
+### Increment Restarts
+**Endpoint:** `/increment_restarts`
+**Method:** `PUT`
+
+**Sample Request:**
+```bash
+curl -X PUT http://127.0.0.1:5000/increment_restarts -H "Content-Type: application/json" -d '{
+  "job_name": "job_1"
 }'
 ```
 
