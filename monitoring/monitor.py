@@ -23,7 +23,7 @@ SECRET_FILE = 'secret.json'
 @app.route('/freegpu', methods=['GET'])
 def getfreegpu():
     headers = json.load(open('secret.json'))
-    response = requests.get('https://prometheus-k8s-openshift-monitoring.apps.pok.res.ibm.com/api/v1/query?query=group%20by(Hostname,gpu,exported_pod)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)', headers=headers)
+    response = requests.get('https://prometheus-k8s-openshift-monitoring/api/v1/query?query=group%20by(Hostname,gpu,exported_pod)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)', headers=headers)
     '''
     with open("output.json", 'r') as f:
             data = json.load(f)

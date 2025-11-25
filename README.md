@@ -11,8 +11,6 @@ The Version 1 is implemented on top of kubernetes and has the following features
 
 ![Architecture diagram](./images/mvp1.png)
 
-
-
 # How to run
 
 We have shared the deployment yamls to run the [workload manager](./deployment/manager.yaml) and job metadata manager on a Kubernetes/Openshift environment. Instructions on running the workload manager itself are in the [manager folder](./manager/README.md)

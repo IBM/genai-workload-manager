@@ -2,3 +2,4 @@ Flask
 requests
 pyyaml
 kubernetes
+fastapi

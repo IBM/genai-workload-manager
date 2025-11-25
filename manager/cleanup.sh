@@ -16,4 +16,9 @@ for i in $(seq 1 $n_jobs); do
     rm -rf $dir/checkpoint-*
     rm -rf $dir/training_logs.jsonl
     echo "Cleaning up " $dir
+    ./main.py delete -n genai-job$i
 done
+
+pkill fastapi
+pkill -9 -f pytorchstatus.py
+

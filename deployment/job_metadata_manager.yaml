@@ -22,6 +22,10 @@ spec:
           env:
             - name: FLASK_PORT
               value: "5000"
+            - name: NEXT_CHECKPOINT_THRESHOLD
+              value: "60"
+            - name: MANAGER_API_URL
+              value: "http://genai-workload-manager-service.fms-tuning.svc.cluster.local:8000/scale"
           volumeMounts:
             - name: data
               mountPath: /data

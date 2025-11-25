@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 import click
 import manager
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Job(BaseModel):
+    name: str
 
 @click.group()
 def main():
@@ -15,6 +22,13 @@ def deploy(filename):
 @click.option("-n", "--name", help="Name of job to scale")
 def scale(name):
     manager.scale(name)
+
+@app.post('/scale/{name}')
+def scaleAPI(name: str):
+    if not manager.scale(name):
+        return "Did not scale", 401
+    else:
+        return "Scaled", 200
 
 @main.command()
 @click.option("-n", "--name", help="Name of job to delete", required=True, multiple=True)
